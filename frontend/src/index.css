@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  @apply bg-white dark:bg-gray-900 transition-colors duration-300;
+}
+
+/* Focus states */
+*:focus-visible {
+  @apply outline-none ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-gray-900;
+}
+
+/* Transitions */
+.transition-default {
+  @apply transition-all duration-300 ease-in-out;
+}
+
+/* Form elements */
+input, select, textarea {
+  @apply transition-colors duration-300 dark:bg-gray-800 dark:border-gray-700 dark:text-white;
+}
