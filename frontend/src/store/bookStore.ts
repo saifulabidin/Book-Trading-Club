@@ -274,13 +274,20 @@ export const useStore = create<BookStore>()(
           const result = await signInWithPopup(auth, githubProvider);
           const githubUser = result.user;
           
+          if (!githubUser || !githubUser.email) {
+            throw new Error('Could not retrieve required information from GitHub account');
+          }
+          
           // Exchange Firebase token for our JWT
           const idToken = await githubUser.getIdToken();
+          
+          // Send comprehensive data to backend
           const { data } = await api.post<AuthResponse>('/auth/login', {
             token: idToken,
             email: githubUser.email,
-            displayName: githubUser.displayName,
-            photoURL: githubUser.photoURL
+            displayName: githubUser.displayName || githubUser.email.split('@')[0],
+            photoURL: githubUser.photoURL,
+            providerId: 'github.com'
           });
           
           // Store the JWT token
@@ -294,10 +301,10 @@ export const useStore = create<BookStore>()(
             fullName: data.fullName || githubUser.displayName || 'GitHub User',
             location: data.location || '',
             books: [],
-            githubUsername: githubUser.providerData[0]?.displayName || '',
+            githubUsername: githubUser.providerData[0]?.displayName || githubUser.email.split('@')[0],
             githubPhotoUrl: githubUser.photoURL || '',
-            favorites: [],
-            wishlist: [],
+            favorites: data.favorites || [],
+            wishlist: data.wishlist || [],
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           };
@@ -310,11 +317,11 @@ export const useStore = create<BookStore>()(
             isLoading: { ...state.isLoading, auth: false }
           }));
         } catch (error) {
+          console.error('GitHub authentication error:', error);
           set(state => ({ 
-            error: 'Failed to sign in with GitHub',
+            error: error instanceof Error ? error.message : 'Failed to sign in with GitHub',
             isLoading: { ...state.isLoading, auth: false }
           }));
-          console.error('Error signing in with GitHub:', error);
           throw error;
         }
       },
@@ -390,7 +397,7 @@ export const useStore = create<BookStore>()(
       login: async (email: string, password: string) => {
         set(state => ({ isLoading: { ...state.isLoading, auth: true }, error: null }));
         try {
-          const { data } = await api.post<AuthResponse>('/auth/signin', { email, password });
+          const { data } = await api.post<AuthResponse>('/auth/login', { email, password });
           
           // Store the JWT token
           localStorage.setItem(LOCAL_STORAGE_KEYS.TOKEN, data.token);

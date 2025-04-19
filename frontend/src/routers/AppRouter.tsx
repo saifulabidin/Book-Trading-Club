@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import Home from '../pages/Home';
 import AddBook from '../pages/AddBook';
@@ -10,7 +10,7 @@ import PrivateRoute from '../components/PrivateRoute';
 
 const AppRouter = () => {
   return (
-    <BrowserRouter>
+    <>
       <KeyboardShortcuts />
       <Header />
       <main className="pt-6 pb-12">
@@ -44,7 +44,7 @@ const AppRouter = () => {
           </Routes>
         </AnimatePresence>
       </main>
-    </BrowserRouter>
+    </>
   );
 };
 

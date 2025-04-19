@@ -66,6 +66,8 @@ export interface ApiError {
 }
 
 export interface AuthResponse {
+  wishlist: never[];
+  favorites: never[];
   _id: string;
   username: string;
   email: string;
