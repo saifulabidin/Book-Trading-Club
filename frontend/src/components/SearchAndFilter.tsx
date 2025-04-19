@@ -32,22 +32,6 @@ const SearchAndFilter = ({
     }
   }, [isEscapePressed, isFilterOpen]);
 
-  useEffect(() => {
-    // Handle responsive state
-    const checkMobileView = () => {
-      // We're not tracking this state anymore since it's unused
-      // Just handle any needed responsive behavior directly
-      // No need to maintain unused state
-    };
-
-    checkMobileView();
-    window.addEventListener('resize', checkMobileView);
-
-    return () => {
-      window.removeEventListener('resize', checkMobileView);
-    };
-  }, []);
-
   // Extract unique categories from all books
   const allCategories = Array.from(
     new Set(
@@ -115,6 +99,7 @@ const SearchAndFilter = ({
 
   return (
     <div className="space-y-4 bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-lg shadow-md transition-all duration-300">
+      {/* Search input */}
       <div className="relative">
         <div className="relative flex items-center">
           <span className="absolute left-3 text-gray-400 pointer-events-none">
@@ -151,6 +136,7 @@ const SearchAndFilter = ({
         </div>
       </div>
 
+      {/* Filter controls */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <button
           onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -196,6 +182,7 @@ const SearchAndFilter = ({
         </AnimatePresence>
       </div>
 
+      {/* Filter panel */}
       <motion.div
         initial={false}
         animate={{ 
@@ -208,6 +195,7 @@ const SearchAndFilter = ({
         id="filter-panel"
       >
         <div className="p-4 space-y-6">
+          {/* Categories section */}
           {allCategories.length > 0 && (
             <div>
               <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -250,6 +238,7 @@ const SearchAndFilter = ({
             </div>
           )}
 
+          {/* Conditions section */}
           <div>
             <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               <span className="flex items-center gap-2">

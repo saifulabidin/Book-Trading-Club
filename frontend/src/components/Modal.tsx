@@ -41,6 +41,7 @@ const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
       {isOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex min-h-screen items-center justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            {/* Overlay - only close when clicking directly on it */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -51,12 +52,14 @@ const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
               data-close-on-escape="true"
             />
 
+            {/* Modal content - stop propagation to prevent overlay's onClick from firing */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.2 }}
-              className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6"
+              className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6 relative z-50"
+              onClick={(e) => e.stopPropagation()}
             >
               <div
                 ref={modalRef}
