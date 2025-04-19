@@ -4,6 +4,7 @@ import Home from '../pages/Home';
 import AddBook from '../pages/AddBook';
 import Settings from '../pages/Settings';
 import Trades from '../pages/Trades';
+import SignIn from '../pages/SignIn';
 import Header from '../components/Header';
 import KeyboardShortcuts from '../components/KeyboardShortcuts';
 import PrivateRoute from '../components/PrivateRoute';
@@ -17,6 +18,7 @@ const AppRouter = () => {
         <AnimatePresence mode="wait">
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/signin" element={<SignIn />} />
             <Route
               path="/add-book"
               element={

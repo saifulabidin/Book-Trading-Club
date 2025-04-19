@@ -47,21 +47,18 @@ api.interceptors.response.use(
       switch (error.response.status) {
         case 401:
           customError.message = 'Please sign in to continue';
-          // Only redirect to login for authentication-related endpoints
-          const authRelatedPaths = ['/auth/login', '/auth/register', '/auth/refresh'];
-          const isAuthRelatedPath = authRelatedPaths.some(path => 
-            error.config?.url?.includes(path)
-          );
           
-          if (isAuthRelatedPath || error.response.data.code === 'token_expired') {
-            // Clear token on auth error
+          // Don't redirect for auth endpoints - they handle their own errors
+          const authEndpoint = error.config?.url?.includes('/auth/');
+          const isAuthPage = window.location.pathname.includes('/signin') || window.location.pathname.includes('/signup');
+          
+          if (!authEndpoint && !isAuthPage && error.response.data.code === 'token_expired') {
+            // Only clear token for token expiration issues
             localStorage.removeItem(LOCAL_STORAGE_KEYS.TOKEN);
             localStorage.removeItem(LOCAL_STORAGE_KEYS.USER);
             
-            // Only redirect if we're not already on the login page
-            if (!window.location.pathname.includes('/login')) {
-              window.location.href = '/login';
-            }
+            // Redirect to signin if not already on an auth page
+            window.location.href = '/signin';
           }
           break;
         case 403:

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, forwardRef, ForwardedRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
@@ -12,14 +12,14 @@ interface ToastProps {
   id: string;
 }
 
-const Toast = ({ 
+const Toast = forwardRef(({ 
   message, 
   type, 
   onClose, 
   duration = 5000,
   title,
   id 
-}: ToastProps) => {
+}: ToastProps, ref: ForwardedRef<HTMLDivElement>) => {
   const [isVisible, setIsVisible] = useState(true);
   const [isHovering, setIsHovering] = useState(false);
   const timeoutRef = useRef<number | null>(null);
@@ -151,6 +151,7 @@ const Toast = ({
     <AnimatePresence>
       {isVisible && (
         <motion.div
+          ref={ref}
           layout
           key={id}
           initial="initial"
@@ -212,6 +213,9 @@ const Toast = ({
       )}
     </AnimatePresence>
   );
-};
+});
+
+// Add display name for better debugging
+Toast.displayName = 'Toast';
 
 export default Toast;
