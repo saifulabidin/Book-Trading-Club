@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../store/bookStore';
 import Toast, { ToastType } from './Toast';
 

@@ -22,18 +22,18 @@ const Toast = ({
 }: ToastProps) => {
   const [isVisible, setIsVisible] = useState(true);
   const [isHovering, setIsHovering] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<number | null>(null);
 
   const startCloseTimer = () => {
     if (isHovering) return;
     
     if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
+      window.clearTimeout(timeoutRef.current);
     }
     
-    timeoutRef.current = setTimeout(() => {
+    timeoutRef.current = window.setTimeout(() => {
       setIsVisible(false);
-      setTimeout(onClose, 300); // Wait for exit animation to complete
+      window.setTimeout(onClose, 300); // Wait for exit animation to complete
     }, duration);
   };
 
@@ -42,7 +42,7 @@ const Toast = ({
     
     return () => {
       if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+        window.clearTimeout(timeoutRef.current);
       }
     };
   }, [duration, onClose]);
@@ -50,7 +50,7 @@ const Toast = ({
   const handleMouseEnter = () => {
     setIsHovering(true);
     if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
+      window.clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
   };
@@ -180,7 +180,7 @@ const Toast = ({
                 <button
                   onClick={() => {
                     setIsVisible(false);
-                    setTimeout(onClose, 300);
+                    window.setTimeout(onClose, 300);
                   }}
                   className={`rounded-md inline-flex p-1.5 ${colors[type].icon} hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-900 transition-colors duration-200`}
                   aria-label="Close notification"

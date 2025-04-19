@@ -5,6 +5,7 @@ import { connectDB } from './config/database';
 import authRoutes from './routes/authRoutes';
 import bookRoutes from './routes/bookRoutes';
 import tradeRoutes from './routes/tradeRoutes';
+import { errorHandler } from './middleware/errorHandler';
 
 dotenv.config();
 
@@ -36,10 +37,7 @@ app.get('/', (req, res) => {
 });
 
 // Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ message: err.message || 'Something went wrong!' });
-});
+app.use(errorHandler);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

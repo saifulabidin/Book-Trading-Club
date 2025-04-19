@@ -14,7 +14,7 @@ declare global {
   }
 }
 
-export const protect = async (req: Request, res: Response, next: NextFunction) => {
+export const protect = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   let token;
 
   if (req.headers.authorization?.startsWith('Bearer')) {
@@ -22,7 +22,8 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
   }
 
   if (!token) {
-    return res.status(401).json({ message: 'Not authorized to access this route' });
+    res.status(401).json({ message: 'Not authorized to access this route' });
+    return;
   }
 
   try {
@@ -30,7 +31,8 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
     const user = await User.findById(decoded.id).select('-password');
     
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      res.status(404).json({ message: 'User not found' });
+      return;
     }
 
     req.user = user;

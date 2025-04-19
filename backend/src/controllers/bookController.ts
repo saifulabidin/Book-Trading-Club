@@ -5,7 +5,7 @@ import { User } from '../models/User';
 // @desc    Get all available books
 // @route   GET /api/books
 // @access  Public
-export const getBooks = async (req: Request, res: Response) => {
+export const getBooks = async (req: Request, res: Response): Promise<void> => {
   try {
     const books = await Book.find({ isAvailable: true })
       .populate('owner', 'username location')
@@ -19,13 +19,14 @@ export const getBooks = async (req: Request, res: Response) => {
 // @desc    Get a single book
 // @route   GET /api/books/:id
 // @access  Public
-export const getBook = async (req: Request, res: Response) => {
+export const getBook = async (req: Request, res: Response): Promise<void> => {
   try {
     const book = await Book.findById(req.params.id)
       .populate('owner', 'username location');
     
     if (!book) {
-      return res.status(404).json({ message: 'Book not found' });
+      res.status(404).json({ message: 'Book not found' });
+      return;
     }
     
     res.json(book);
@@ -37,7 +38,7 @@ export const getBook = async (req: Request, res: Response) => {
 // @desc    Create a new book
 // @route   POST /api/books
 // @access  Private
-export const createBook = async (req: Request, res: Response) => {
+export const createBook = async (req: Request, res: Response): Promise<void> => {
   try {
     const book = await Book.create({
       ...req.body,
@@ -58,16 +59,18 @@ export const createBook = async (req: Request, res: Response) => {
 // @desc    Update a book
 // @route   PUT /api/books/:id
 // @access  Private
-export const updateBook = async (req: Request, res: Response) => {
+export const updateBook = async (req: Request, res: Response): Promise<void> => {
   try {
     const book = await Book.findById(req.params.id);
     
     if (!book) {
-      return res.status(404).json({ message: 'Book not found' });
+      res.status(404).json({ message: 'Book not found' });
+      return;
     }
 
     if (book.owner.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized to update this book' });
+      res.status(403).json({ message: 'Not authorized to update this book' });
+      return;
     }
 
     const updatedBook = await Book.findByIdAndUpdate(

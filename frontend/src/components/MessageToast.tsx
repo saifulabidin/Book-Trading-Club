@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useStore } from '../store/bookStore';
 import Toast from './Toast';
 
 const MessageToast = () => {
   const { message, error, setMessage, setError } = useStore();
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: 'success' | 'error' }>>([]);
+  // Use useRef for timeouts to avoid using NodeJS.Timeout type
+  const timeoutRefs = useRef<Record<string, number>>({});
 
   useEffect(() => {
     if (message) {
@@ -17,9 +19,16 @@ const MessageToast = () => {
       setMessage(null);
 
       // Auto-remove after 5 seconds
-      setTimeout(() => {
+      const timeoutId = window.setTimeout(() => {
         setToasts(prev => prev.filter(t => t.id !== newToast.id));
       }, 5000);
+      
+      timeoutRefs.current[newToast.id] = timeoutId;
+      
+      return () => {
+        window.clearTimeout(timeoutRefs.current[newToast.id]);
+        delete timeoutRefs.current[newToast.id];
+      };
     }
   }, [message, setMessage]);
 
@@ -34,14 +43,25 @@ const MessageToast = () => {
       setError(null);
 
       // Auto-remove after 5 seconds
-      setTimeout(() => {
+      const timeoutId = window.setTimeout(() => {
         setToasts(prev => prev.filter(t => t.id !== newToast.id));
       }, 5000);
+      
+      timeoutRefs.current[newToast.id] = timeoutId;
+      
+      return () => {
+        window.clearTimeout(timeoutRefs.current[newToast.id]);
+        delete timeoutRefs.current[newToast.id];
+      };
     }
   }, [error, setError]);
 
   const removeToast = (id: string) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
+    if (timeoutRefs.current[id]) {
+      window.clearTimeout(timeoutRefs.current[id]);
+      delete timeoutRefs.current[id];
+    }
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
   };
 
   return (
@@ -49,6 +69,7 @@ const MessageToast = () => {
       {toasts.map(toast => (
         <Toast
           key={toast.id}
+          id={toast.id}
           message={toast.message}
           type={toast.type}
           onClose={() => removeToast(toast.id)}

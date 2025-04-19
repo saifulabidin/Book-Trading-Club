@@ -28,21 +28,41 @@ api.interceptors.response.use(
   (error) => {
     const customError = {
       message: '',
-      status: error.response?.status || 500
+      status: error.response?.status || 500,
+      errors: {} as Record<string, string[]>,
+      originalError: error
     };
 
     // Handle different types of errors
     if (error.response) {
+      // Keep the original error message if available
       customError.message = error.response.data.message || 'Server error occurred';
+      
+      // Preserve field-specific errors if available
+      if (error.response.data.errors && typeof error.response.data.errors === 'object') {
+        customError.errors = error.response.data.errors;
+      }
       
       // Handle specific status codes
       switch (error.response.status) {
         case 401:
           customError.message = 'Please sign in to continue';
-          // Clear token on auth error
-          localStorage.removeItem(LOCAL_STORAGE_KEYS.TOKEN);
-          localStorage.removeItem(LOCAL_STORAGE_KEYS.USER);
-          window.location.href = '/login'; // Redirect to login
+          // Only redirect to login for authentication-related endpoints
+          const authRelatedPaths = ['/auth/login', '/auth/register', '/auth/refresh'];
+          const isAuthRelatedPath = authRelatedPaths.some(path => 
+            error.config?.url?.includes(path)
+          );
+          
+          if (isAuthRelatedPath || error.response.data.code === 'token_expired') {
+            // Clear token on auth error
+            localStorage.removeItem(LOCAL_STORAGE_KEYS.TOKEN);
+            localStorage.removeItem(LOCAL_STORAGE_KEYS.USER);
+            
+            // Only redirect if we're not already on the login page
+            if (!window.location.pathname.includes('/login')) {
+              window.location.href = '/login';
+            }
+          }
           break;
         case 403:
           customError.message = 'You do not have permission to perform this action';
@@ -54,7 +74,7 @@ api.interceptors.response.use(
           customError.message = 'This action conflicts with existing data';
           break;
         case 422:
-          customError.message = 'Invalid data provided';
+          customError.message = error.response.data.message || 'Validation failed. Please check your input.';
           break;
         case 429:
           customError.message = 'Too many requests. Please try again later';
@@ -69,6 +89,14 @@ api.interceptors.response.use(
     } else {
       customError.message = 'An error occurred while processing your request';
     }
+
+    console.error('API Error:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: customError.status,
+      message: customError.message,
+      errors: customError.errors
+    });
 
     return Promise.reject(customError);
   }

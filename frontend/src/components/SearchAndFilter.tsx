@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { BookCondition } from '../types';
 import { useStore } from '../store/bookStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useKeyPress } from '../hooks/useKeyPress';
+import useKeyPress from '../hooks/useKeyPress';
 
 interface SearchAndFilterProps {
   onSearch: (query: string) => void;
@@ -20,7 +20,6 @@ const SearchAndFilter = ({
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedConditions, setSelectedConditions] = useState<BookCondition[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isMobileView, setIsMobileView] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Listen for escape key to close filters
@@ -31,7 +30,9 @@ const SearchAndFilter = ({
   useEffect(() => {
     // Handle responsive state
     const checkMobileView = () => {
-      setIsMobileView(window.innerWidth < 640);
+      // We're not tracking this state anymore since it's unused
+      // Just handle any needed responsive behavior directly
+      // No need to maintain unused state
     };
 
     checkMobileView();
@@ -122,7 +123,7 @@ const SearchAndFilter = ({
             type="text"
             placeholder="Search books by title or author..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-300"
           />
           <AnimatePresence>

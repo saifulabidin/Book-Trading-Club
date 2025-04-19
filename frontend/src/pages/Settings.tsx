@@ -9,7 +9,7 @@ import Button from '../components/Button';
 import ErrorAlert from '../components/ErrorAlert';
 
 const Settings = () => {
-  const { currentUser, setAuthUser, setMessage, setError } = useStore();
+  const { currentUser, setAuthUser, setMessage } = useStore();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);

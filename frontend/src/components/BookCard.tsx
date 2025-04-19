@@ -157,7 +157,7 @@ const BookCard = ({ book }: BookCardProps) => {
             <select
               id="book-select"
               value={selectedBookId}
-              onChange={(e) => setSelectedBookId(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedBookId(e.target.value)}
               className="w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-300"
             >
               <option value="">Select a book</option>
@@ -181,7 +181,7 @@ const BookCard = ({ book }: BookCardProps) => {
             <textarea
               id="trade-message"
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setMessage(e.target.value)}
               rows={3}
               className="w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-300"
               placeholder="Add a message to the trade request..."

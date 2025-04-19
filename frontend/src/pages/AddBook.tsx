@@ -5,39 +5,84 @@ import { BookCondition } from '../types';
 import Button from '../components/Button';
 import ErrorAlert from '../components/ErrorAlert';
 import { motion } from 'framer-motion';
+import useFormValidation from '../hooks/useFormValidation';
+import { validateBook } from '../utils/validation';
+import { safeSplit } from '../utils/types';
 
 const AddBook = () => {
   const navigate = useNavigate();
   const addBook = useStore(state => state.addBook);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError(null);
-    setIsSubmitting(true);
-
-    const formData = new FormData(e.currentTarget);
-    const bookData = {
-      title: formData.get('title') as string,
-      author: formData.get('author') as string,
-      description: formData.get('description') as string,
-      condition: formData.get('condition') as BookCondition,
-      isbn: formData.get('isbn') as string,
-      genre: (formData.get('genre') as string).split(',').map(g => g.trim()),
-      publishedYear: parseInt(formData.get('publishedYear') as string),
-      image: formData.get('image') as string,
-    };
-
-    try {
-      await addBook(bookData);
-      navigate('/');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add book');
-    } finally {
-      setIsSubmitting(false);
-    }
+  
+  // Define proper types for form values
+  interface BookFormValues {
+    title: string;
+    author: string;
+    description: string;
+    condition: BookCondition | '';
+    isbn: string;
+    genre: string;  // Store as comma-separated string in form
+    publishedYear: string;  // Store as string in form, parse to number when submitting
+    image: string;
+  }
+  
+  const initialValues: BookFormValues = {
+    title: '',
+    author: '',
+    description: '',
+    condition: '' as BookCondition | '',
+    isbn: '',
+    genre: '',
+    publishedYear: '',
+    image: ''
   };
+  
+  const {
+    values,
+    errors,
+    touched,
+    isSubmitting,
+    handleChange,
+    handleBlur,
+    handleSubmit,
+    setServerErrors
+  } = useFormValidation<BookFormValues>({
+    initialValues,
+    validate: validateBook,
+    onSubmit: async (values: BookFormValues) => {
+      setError(null);
+      
+      try {
+        // Process form values properly with safe type conversions
+        const genreArray = safeSplit(values.genre, ',').map(g => g.trim()).filter(Boolean);
+        const publishedYearValue = values.publishedYear ? parseInt(values.publishedYear, 10) : undefined;
+        
+        // Construct properly typed book data
+        const bookData = {
+          title: values.title,
+          author: values.author,
+          description: values.description,
+          condition: values.condition as BookCondition, // Type assertion after validation
+          isbn: values.isbn,
+          genre: genreArray,
+          publishedYear: publishedYearValue,
+          image: values.image || undefined,
+          isAvailable: true,
+          updatedAt: new Date().toISOString(),
+        };
+        
+        await addBook(bookData);
+        navigate('/');
+      } catch (err: any) {
+        // Handle both general error message and field-specific errors
+        if (err.errors && Object.keys(err.errors).length > 0) {
+          setServerErrors(err.errors);
+        }
+        setError(err.message || 'Failed to add book');
+        throw err; // Rethrow to keep form in submitting state
+      }
+    }
+  });
 
   return (
     <motion.div
@@ -61,9 +106,16 @@ const AddBook = () => {
             type="text"
             id="title"
             name="title"
-            required
-            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-300"
+            value={values.title}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            className={`mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-300 ${
+              touched.title && errors.title ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''
+            }`}
           />
+          {touched.title && errors.title && (
+            <p className="mt-1 text-sm text-red-600">{errors.title}</p>
+          )}
         </div>
 
         <div>
@@ -74,9 +126,16 @@ const AddBook = () => {
             type="text"
             id="author"
             name="author"
-            required
-            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-300"
+            value={values.author}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            className={`mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-300 ${
+              touched.author && errors.author ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''
+            }`}
           />
+          {touched.author && errors.author && (
+            <p className="mt-1 text-sm text-red-600">{errors.author}</p>
+          )}
         </div>
 
         <div>
@@ -86,10 +145,17 @@ const AddBook = () => {
           <textarea
             id="description"
             name="description"
-            required
+            value={values.description}
+            onChange={handleChange}
+            onBlur={handleBlur}
             rows={4}
-            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-300"
+            className={`mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-300 ${
+              touched.description && errors.description ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''
+            }`}
           />
+          {touched.description && errors.description && (
+            <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+          )}
         </div>
 
         <div>
@@ -99,8 +165,12 @@ const AddBook = () => {
           <select
             id="condition"
             name="condition"
-            required
-            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-300"
+            value={values.condition}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            className={`mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-300 ${
+              touched.condition && errors.condition ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''
+            }`}
           >
             <option value="">Select condition</option>
             <option value="New">New</option>
@@ -110,6 +180,9 @@ const AddBook = () => {
             <option value="Fair">Fair</option>
             <option value="Poor">Poor</option>
           </select>
+          {touched.condition && errors.condition && (
+            <p className="mt-1 text-sm text-red-600">{errors.condition}</p>
+          )}
         </div>
 
         <div>
@@ -120,8 +193,16 @@ const AddBook = () => {
             type="text"
             id="isbn"
             name="isbn"
-            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-300"
+            value={values.isbn}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            className={`mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-300 ${
+              touched.isbn && errors.isbn ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''
+            }`}
           />
+          {touched.isbn && errors.isbn && (
+            <p className="mt-1 text-sm text-red-600">{errors.isbn}</p>
+          )}
         </div>
 
         <div>
@@ -132,9 +213,17 @@ const AddBook = () => {
             type="text"
             id="genre"
             name="genre"
+            value={values.genre}
+            onChange={handleChange}
+            onBlur={handleBlur}
             placeholder="Fiction, Fantasy, Adventure"
-            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-300"
+            className={`mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-300 ${
+              touched.genre && errors.genre ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''
+            }`}
           />
+          {touched.genre && errors.genre && (
+            <p className="mt-1 text-sm text-red-600">{errors.genre}</p>
+          )}
         </div>
 
         <div>
@@ -145,10 +234,18 @@ const AddBook = () => {
             type="number"
             id="publishedYear"
             name="publishedYear"
+            value={values.publishedYear}
+            onChange={handleChange}
+            onBlur={handleBlur}
             min="1000"
             max={new Date().getFullYear()}
-            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-300"
+            className={`mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-300 ${
+              touched.publishedYear && errors.publishedYear ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''
+            }`}
           />
+          {touched.publishedYear && errors.publishedYear && (
+            <p className="mt-1 text-sm text-red-600">{errors.publishedYear}</p>
+          )}
         </div>
 
         <div>
@@ -159,8 +256,16 @@ const AddBook = () => {
             type="url"
             id="image"
             name="image"
-            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-300"
+            value={values.image}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            className={`mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-300 ${
+              touched.image && errors.image ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''
+            }`}
           />
+          {touched.image && errors.image && (
+            <p className="mt-1 text-sm text-red-600">{errors.image}</p>
+          )}
         </div>
 
         <div className="flex justify-end space-x-3 pt-4">

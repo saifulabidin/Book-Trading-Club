@@ -26,6 +26,9 @@ interface BookStore {
   message: string | null
   
   // Auth actions
+  login: (email: string, password: string) => Promise<void>
+  register: (username: string, email: string, password: string) => Promise<void>
+  checkAuthStatus: () => Promise<void>
   signInWithGithub: () => Promise<void>
   logout: () => Promise<void>
   setAuthUser: (user: User | null) => void
@@ -55,6 +58,8 @@ interface BookStore {
   // Error handling
   setError: (error: string | null) => void
   setMessage: (message: string | null) => void
+  clearError: () => void
+  clearMessage: () => void
 }
 
 export const useStore = create<BookStore>()(
@@ -369,6 +374,8 @@ export const useStore = create<BookStore>()(
 
       setError: (error) => set({ error }),
 
+      clearError: () => set({ error: null }),
+
       setMessage: (message) => {
         set({ message });
         if (message) {
@@ -376,7 +383,125 @@ export const useStore = create<BookStore>()(
             set({ message: null });
           }, 3000);
         }
-      }
+      },
+
+      clearMessage: () => set({ message: null }),
+
+      login: async (email: string, password: string) => {
+        set(state => ({ isLoading: { ...state.isLoading, auth: true }, error: null }));
+        try {
+          const { data } = await api.post<AuthResponse>('/auth/signin', { email, password });
+          
+          // Store the JWT token
+          localStorage.setItem(LOCAL_STORAGE_KEYS.TOKEN, data.token);
+          setAuthToken(data.token);
+          
+          const user: User = {
+            _id: data._id,
+            username: data.username,
+            email: data.email,
+            fullName: data.fullName || '',
+            location: data.location || '',
+            books: [],
+            favorites: [],
+            wishlist: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          
+          localStorage.setItem(LOCAL_STORAGE_KEYS.USER, JSON.stringify(user));
+          
+          set(state => ({
+            currentUser: user,
+            isAuthenticated: true,
+            isLoading: { ...state.isLoading, auth: false }
+          }));
+        } catch (error) {
+          set(state => ({ 
+            error: 'Invalid email or password',
+            isLoading: { ...state.isLoading, auth: false }
+          }));
+          throw error;
+        }
+      },
+      
+      register: async (username: string, email: string, password: string) => {
+        set(state => ({ isLoading: { ...state.isLoading, auth: true }, error: null }));
+        try {
+          const { data } = await api.post<AuthResponse>('/auth/register', { 
+            username, 
+            email, 
+            password 
+          });
+          
+          // Store the JWT token
+          localStorage.setItem(LOCAL_STORAGE_KEYS.TOKEN, data.token);
+          setAuthToken(data.token);
+          
+          const user: User = {
+            _id: data._id,
+            username: data.username,
+            email: data.email,
+            fullName: '',
+            location: '',
+            books: [],
+            favorites: [],
+            wishlist: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          
+          localStorage.setItem(LOCAL_STORAGE_KEYS.USER, JSON.stringify(user));
+          
+          set(state => ({
+            currentUser: user,
+            isAuthenticated: true,
+            isLoading: { ...state.isLoading, auth: false }
+          }));
+        } catch (error) {
+          set(state => ({ 
+            error: 'Registration failed. Please try again.',
+            isLoading: { ...state.isLoading, auth: false }
+          }));
+          throw error;
+        }
+      },
+      
+      checkAuthStatus: async () => {
+        const token = localStorage.getItem(LOCAL_STORAGE_KEYS.TOKEN);
+        
+        if (!token) {
+          set({ isAuthenticated: false, currentUser: null });
+          return;
+        }
+        
+        set(state => ({ isLoading: { ...state.isLoading, auth: true } }));
+        
+        try {
+          // Verify token validity with the server
+          await api.get('/auth/verify');
+          
+          // If token is valid, current user is already set
+          set(state => ({ 
+            isAuthenticated: !!state.currentUser,
+            isLoading: { ...state.isLoading, auth: false }
+          }));
+        } catch (error) {
+          // If token verification fails, clear auth data
+          localStorage.removeItem(LOCAL_STORAGE_KEYS.TOKEN);
+          localStorage.removeItem(LOCAL_STORAGE_KEYS.USER);
+          
+          set({ 
+            isAuthenticated: false, 
+            currentUser: null,
+            isLoading: { 
+              auth: false,
+              books: false,
+              trades: false
+            }
+          });
+        }
+      },
     }),
     {
       name: 'book-trading-storage',
