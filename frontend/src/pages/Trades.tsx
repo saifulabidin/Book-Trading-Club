@@ -24,7 +24,7 @@ const TradeStatusBadge = ({ status }: { status: TradeStatus }) => {
 
 const TradeCard = ({ trade }: { trade: Trade }) => {
   const { currentUser, updateTradeStatus } = useStore();
-  const isReceiver = trade.receiver === currentUser?.id;
+  const isReceiver = trade.receiver === currentUser?._id;
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleUpdateStatus = async (status: TradeStatus) => {

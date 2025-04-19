@@ -23,9 +23,14 @@ const SearchAndFilter = ({
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Listen for escape key to close filters
-  useKeyPress('Escape', () => {
-    if (isFilterOpen) setIsFilterOpen(false);
-  });
+  const isEscapePressed = useKeyPress('Escape');
+
+  // Handle escape key press to close filters
+  useEffect(() => {
+    if (isEscapePressed && isFilterOpen) {
+      setIsFilterOpen(false);
+    }
+  }, [isEscapePressed, isFilterOpen]);
 
   useEffect(() => {
     // Handle responsive state

@@ -1,4 +1,4 @@
-import { useState, ChangeEvent, FormEvent } from 'react';
+import { useState, ChangeEvent, FormEvent, FocusEvent } from 'react';
 
 export interface FormValidationOptions<T extends Record<string, any>> {
   initialValues: T;
@@ -34,6 +34,18 @@ export default function useFormValidation<T extends Record<string, any>>({
     });
   };
 
+  const handleBlur = (event: FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name } = event.target;
+    setTouched({
+      ...touched,
+      [name]: true
+    });
+
+    // Validate the field when it loses focus
+    const validationErrors = validate(values);
+    setErrors(validationErrors);
+  };
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     
@@ -66,14 +78,23 @@ export default function useFormValidation<T extends Record<string, any>>({
     setIsSubmitting(false);
   };
 
+  const setServerErrors = (serverErrors: Record<string, string>) => {
+    setErrors({
+      ...errors,
+      ...serverErrors
+    });
+  };
+
   return {
     values,
     errors,
     touched,
     isSubmitting,
     handleChange,
+    handleBlur,
     handleSubmit,
     resetForm,
-    setValues
+    setValues,
+    setServerErrors
   };
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { useStore } from '../store/bookStore';
 import Toast, { ToastType } from './Toast';
 
@@ -13,7 +13,7 @@ export interface ToastItem {
 
 // Singleton for managing toasts across the application
 export const ToastManager = {
-  toastCallback: (toast: Omit<ToastItem, 'id'>) => {},
+  toastCallback: (_toast: Omit<ToastItem, 'id'>) => {},
   
   show(message: string, type: ToastType = 'info', title?: string, duration?: number) {
     this.toastCallback({
