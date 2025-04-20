@@ -8,6 +8,8 @@ export interface IUser {
   books: mongoose.Types.ObjectId[];
   githubId?: string;
   githubPhotoUrl?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const userSchema = new mongoose.Schema<IUser>({

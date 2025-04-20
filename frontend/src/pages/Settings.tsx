@@ -3,7 +3,7 @@ import { useStore } from '../store/bookStore';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import api from '../utils/api';
-import { LOCAL_STORAGE_KEYS } from '../utils/constants';
+import { LOCAL_STORAGE_KEYS, API_ENDPOINTS } from '../utils/constants';
 import type { User } from '../types';
 import Button from '../components/Button';
 import ErrorAlert from '../components/ErrorAlert';
@@ -33,7 +33,7 @@ const Settings = () => {
     setIsSubmitting(true);
 
     try {
-      const { data } = await api.put<User>('/users/profile', formData);
+      const { data } = await api.put<User>(API_ENDPOINTS.USERS.UPDATE_PROFILE, formData);
       setAuthUser(data);
       localStorage.setItem(LOCAL_STORAGE_KEYS.USER, JSON.stringify(data));
       setMessage('Profile updated successfully');

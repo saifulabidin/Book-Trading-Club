@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useStore } from '../store/bookStore';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Button from './Button';
 
 const AuthButton = () => {
@@ -24,10 +24,13 @@ const AuthButton = () => {
         transition={{ duration: 0.3 }}
         className="flex items-center space-x-3"
       >
-        {/* Username display */}
-        <span className="hidden sm:block text-sm font-medium text-gray-700 dark:text-gray-300">
-          {currentUser.username}
-        </span>
+        {/* Clickable Username display */}
+        <Link 
+          to={`/user/${currentUser.username}/books`} 
+          className="hidden sm:block text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-300"
+        >
+          @{currentUser.username} 
+        </Link>
 
         {/* Sign Out button */}
         <Button

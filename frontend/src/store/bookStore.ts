@@ -35,6 +35,7 @@ interface BookStore {
   // Book actions
   fetchBooks: () => Promise<void>
   addBook: (book: Omit<Book, '_id' | 'createdAt' | 'owner'>) => Promise<void>
+  deleteBook: (bookId: string) => Promise<void> // Add deleteBook action
   searchBooks: (query: string) => void
   filterByCategory: (categories: string[]) => void
   filterByCondition: (conditions: string[]) => void
@@ -113,6 +114,28 @@ export const useStore = create<BookStore>()(
           }));
         } catch (error) {
           set({ error: 'Failed to add book' });
+        } finally {
+          set(state => ({ isLoading: { ...state.isLoading, books: false } }));
+        }
+      },
+
+      deleteBook: async (bookId) => {
+        const { currentUser } = get();
+        if (!currentUser) {
+          set({ error: 'Authentication required to delete books.' });
+          return;
+        }
+
+        set(state => ({ isLoading: { ...state.isLoading, books: true } }));
+        try {
+          await api.delete(`/books/${bookId}`);
+          set(state => ({
+            books: state.books.filter(book => book._id !== bookId), // This line removes the book from the store state
+            message: 'Book deleted successfully'
+          }));
+        } catch (error: any) {
+          console.error('Failed to delete book:', error);
+          set({ error: error?.response?.data?.message || 'Failed to delete book' });
         } finally {
           set(state => ({ isLoading: { ...state.isLoading, books: false } }));
         }

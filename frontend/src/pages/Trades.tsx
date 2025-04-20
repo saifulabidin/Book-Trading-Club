@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { useStore } from '../store/bookStore';
 import { Trade, TradeStatus, User } from '../types';
 import ErrorAlert from '../components/ErrorAlert';
@@ -33,6 +34,14 @@ const TradeCard = ({ trade }: { trade: Trade }) => {
   // Get usernames for display
   const initiatorUsername = typeof trade.initiator === 'string' ? 'Unknown' : (trade.initiator as User).username;
   const receiverUsername = typeof trade.receiver === 'string' ? 'Unknown' : (trade.receiver as User).username;
+
+  // Safely access book titles
+  const offeredBookTitle = typeof trade.bookOffered === 'object' && trade.bookOffered !== null 
+    ? trade.bookOffered.title 
+    : 'Book Unavailable';
+  const requestedBookTitle = typeof trade.bookRequested === 'object' && trade.bookRequested !== null 
+    ? trade.bookRequested.title 
+    : 'Book Unavailable';
   
   // Correctly determine if current user is the receiver
   const isReceiver = currentUser?._id === receiverId;
@@ -82,10 +91,20 @@ const TradeCard = ({ trade }: { trade: Trade }) => {
         <h4 className="font-medium text-indigo-700 dark:text-indigo-300 mb-2">Trade Participants</h4>
         <div className="flex items-center gap-2 text-sm">
           <span className="font-medium text-gray-700 dark:text-gray-300">From:</span>
-          <span className="text-indigo-600 dark:text-indigo-400">{initiatorUsername}</span>
+          <Link 
+            to={`/user/${initiatorUsername}/books`}
+            className="text-indigo-600 dark:text-indigo-400 hover:underline transition-colors duration-300"
+          >
+            {initiatorUsername}
+          </Link>
           <span className="mx-2">→</span>
           <span className="font-medium text-gray-700 dark:text-gray-300">To:</span>
-          <span className="text-indigo-600 dark:text-indigo-400">{receiverUsername}</span>
+          <Link 
+            to={`/user/${receiverUsername}/books`}
+            className="text-indigo-600 dark:text-indigo-400 hover:underline transition-colors duration-300"
+          >
+            {receiverUsername}
+          </Link>
           {isReceiver && (
             <span className="ml-auto px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-full">
               That's you!
@@ -103,13 +122,13 @@ const TradeCard = ({ trade }: { trade: Trade }) => {
         <div className="space-y-1">
           <h4 className="font-medium text-gray-700 dark:text-gray-300">Offered Book</h4>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            {typeof trade.bookOffered === 'object' ? trade.bookOffered.title : 'Loading...'}
+            {offeredBookTitle}
           </p>
         </div>
         <div className="space-y-1">
           <h4 className="font-medium text-gray-700 dark:text-gray-300">Requested Book</h4>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            {typeof trade.bookRequested === 'object' ? trade.bookRequested.title : 'Loading...'}
+            {requestedBookTitle}
           </p>
         </div>
       </div>
@@ -169,6 +188,12 @@ const Trades = () => {
     loadData();
   }, [fetchUserTrades, markTradesAsSeen]);
 
+  // Filter trades to ensure bookOffered and bookRequested are valid objects
+  const validTrades = trades.filter(trade => 
+    typeof trade.bookOffered === 'object' && trade.bookOffered !== null &&
+    typeof trade.bookRequested === 'object' && trade.bookRequested !== null
+  );
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -184,7 +209,7 @@ const Trades = () => {
           <div className="flex justify-center items-center h-64">
             <LoadingSpinner size="large" />
           </div>
-        ) : trades.length === 0 ? (
+        ) : validTrades.length === 0 ? (
           <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
             <p className="text-gray-500 dark:text-gray-400">
               No trades found. Start trading books with other users!
@@ -193,8 +218,8 @@ const Trades = () => {
         ) : (
           <div className="space-y-6">
             <AnimatePresence>
-              {/* Display all trades in one sorted list */}
-              {trades
+              {/* Display only valid trades */}
+              {validTrades
                 .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                 .map(trade => (
                   <TradeCard key={trade._id} trade={trade} />

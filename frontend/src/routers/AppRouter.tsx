@@ -5,6 +5,7 @@ import AddBook from '../pages/AddBook';
 import Settings from '../pages/Settings';
 import Trades from '../pages/Trades';
 import SignIn from '../pages/SignIn';
+import UserBooks from '../pages/UserBooks';
 import Header from '../components/Header';
 import KeyboardShortcuts from '../components/KeyboardShortcuts';
 import PrivateRoute from '../components/PrivateRoute';
@@ -19,6 +20,7 @@ const AppRouter = () => {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<SignIn />} />
+            <Route path="/user/:username/books" element={<UserBooks />} />
             <Route
               path="/add-book"
               element={

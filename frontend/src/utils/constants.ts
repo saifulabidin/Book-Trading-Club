@@ -99,7 +99,7 @@ export const API_ENDPOINTS = {
   },
   USERS: {
     PROFILE: '/users/profile',
-    UPDATE_SETTINGS: '/users/settings'
+    UPDATE_PROFILE: '/users/profile'
   }
 } as const;
 

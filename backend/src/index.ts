@@ -5,6 +5,7 @@ import { connectDB } from './config/database';
 import authRoutes from './routes/authRoutes';
 import bookRoutes from './routes/bookRoutes';
 import tradeRoutes from './routes/tradeRoutes';
+import userRoutes from './routes/userRoutes';
 import { errorHandler } from './middleware/errorHandler';
 
 dotenv.config();
@@ -30,6 +31,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/trades', tradeRoutes);
+app.use('/api/users', userRoutes);
 
 // Health check route
 app.get('/', (req, res) => {
