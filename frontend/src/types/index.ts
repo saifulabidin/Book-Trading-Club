@@ -45,6 +45,7 @@ export interface Trade {
   bookRequested: string | Book;
   status: TradeStatus;
   message?: string;
+  isSeen: boolean;
   createdAt: string;
   updatedAt: string;
 }

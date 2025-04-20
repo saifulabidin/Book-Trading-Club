@@ -10,6 +10,7 @@ interface BookStore {
   books: Book[]
   currentUser: User | null
   trades: Trade[]
+  unseenTradesCount: number // New state for badge count
   notifications: Notification[]
   filters: {
     search: string
@@ -47,6 +48,7 @@ interface BookStore {
   fetchUserTrades: () => Promise<void>
   proposeTrade: (proposerBookId: string, receiverBookId: string, message?: string) => Promise<void>
   updateTradeStatus: (tradeId: string, status: Trade['status']) => Promise<void>
+  markTradesAsSeen: () => Promise<void> // New action
   
   // Notification actions
   addNotification: (notification: Omit<Notification, 'id' | 'createdAt'>) => void
@@ -66,6 +68,7 @@ export const useStore = create<BookStore>()(
       books: [],
       currentUser: null,
       trades: [],
+      unseenTradesCount: 0, // Initialize unseenTradesCount
       notifications: [],
       filters: {
         search: '',
@@ -191,7 +194,19 @@ export const useStore = create<BookStore>()(
         set(state => ({ isLoading: { ...state.isLoading, trades: true } }));
         try {
           const { data } = await api.get<Trade[]>('/trades');
-          set({ trades: data });
+          
+          // Calculate number of unseen pending trades where user is the receiver
+          const unseenTradesCount = data.filter(trade => 
+            trade.status === 'pending' && 
+            !trade.isSeen && 
+            typeof trade.receiver === 'object' && 
+            trade.receiver._id === get().currentUser?._id
+          ).length;
+          
+          set({ 
+            trades: data,
+            unseenTradesCount
+          });
         } catch (error) {
           set({ error: 'Failed to fetch trades' });
         } finally {
@@ -234,9 +249,40 @@ export const useStore = create<BookStore>()(
         }
       },
 
+      markTradesAsSeen: async () => {
+        if (!get().currentUser) return;
+        
+        try {
+          await api.put('/trades/mark-seen');
+          
+          // Update trades with isSeen = true and reset unseenTradesCount
+          set(state => ({
+            trades: state.trades.map(trade => {
+              if (
+                trade.status === 'pending' && 
+                !trade.isSeen && 
+                typeof trade.receiver === 'object' && 
+                trade.receiver._id === get().currentUser?._id
+              ) {
+                return { ...trade, isSeen: true };
+              }
+              return trade;
+            }),
+            unseenTradesCount: 0
+          }));
+        } catch (error) {
+          console.error('Failed to mark trades as seen:', error);
+        }
+      },
+
       updateTradeStatus: async (tradeId, status) => {
         try {
           const { data } = await api.put<Trade>(`/trades/${tradeId}`, { status });
+          
+          // Extract initiator ID correctly handling both string and object types
+          const initiatorId = typeof data.initiator === 'string' 
+            ? data.initiator 
+            : (data.initiator as User)._id;
           
           set(state => ({
             trades: state.trades.map(trade =>
@@ -247,7 +293,7 @@ export const useStore = create<BookStore>()(
               ...state.notifications,
               {
                 id: crypto.randomUUID(),
-                userId: typeof data.initiator === 'string' ? data.initiator : data.initiator._id,
+                userId: initiatorId,
                 type: status === 'accepted' ? 'trade_accepted' : 'trade_rejected',
                 message: `Your trade proposal has been ${status}`,
                 createdAt: new Date().toISOString(),
@@ -437,6 +483,7 @@ export const useStore = create<BookStore>()(
         filters: state.filters,
         notifications: state.notifications,
         trades: state.trades,
+        unseenTradesCount: state.unseenTradesCount, // Include unseenTradesCount in persistent state
         currentUser: state.currentUser
       }),
       onRehydrateStorage: () => (state) => {

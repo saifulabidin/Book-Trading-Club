@@ -7,6 +7,7 @@ export interface ITrade {
   bookRequested: mongoose.Types.ObjectId;
   status: 'pending' | 'accepted' | 'rejected' | 'completed' | 'cancelled';
   message?: string;
+  isSeen: boolean; // Added isSeen field
 }
 
 const tradeSchema = new mongoose.Schema<ITrade>({
@@ -38,6 +39,10 @@ const tradeSchema = new mongoose.Schema<ITrade>({
   message: {
     type: String,
     trim: true
+  },
+  isSeen: {
+    type: Boolean,
+    default: false // Default to false (unseen)
   }
 }, {
   timestamps: true

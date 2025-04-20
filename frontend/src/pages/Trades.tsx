@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../store/bookStore';
-import { Trade, TradeStatus } from '../types';
+import { Trade, TradeStatus, User } from '../types';
 import ErrorAlert from '../components/ErrorAlert';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Button from '../components/Button';
@@ -24,8 +24,19 @@ const TradeStatusBadge = ({ status }: { status: TradeStatus }) => {
 
 const TradeCard = ({ trade }: { trade: Trade }) => {
   const { currentUser, updateTradeStatus } = useStore();
-  const isReceiver = trade.receiver === currentUser?._id;
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Extract initiator and receiver info properly handling both string and object types
+  const initatorId = typeof trade.initiator === 'string' ? trade.initiator : (trade.initiator as User)._id;
+  const receiverId = typeof trade.receiver === 'string' ? trade.receiver : (trade.receiver as User)._id;
+  
+  // Get usernames for display
+  const initiatorUsername = typeof trade.initiator === 'string' ? 'Unknown' : (trade.initiator as User).username;
+  const receiverUsername = typeof trade.receiver === 'string' ? 'Unknown' : (trade.receiver as User).username;
+  
+  // Correctly determine if current user is the receiver
+  const isReceiver = currentUser?._id === receiverId;
+  const isInitiator = currentUser?._id === initatorId;
 
   const handleUpdateStatus = async (status: TradeStatus) => {
     setIsSubmitting(true);
@@ -53,6 +64,28 @@ const TradeCard = ({ trade }: { trade: Trade }) => {
           </p>
         </div>
         <TradeStatusBadge status={trade.status} />
+      </div>
+
+      {/* Trade participants information */}
+      <div className="mb-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-md">
+        <h4 className="font-medium text-indigo-700 dark:text-indigo-300 mb-2">Trade Participants</h4>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="font-medium text-gray-700 dark:text-gray-300">From:</span>
+          <span className="text-indigo-600 dark:text-indigo-400">{initiatorUsername}</span>
+          <span className="mx-2">→</span>
+          <span className="font-medium text-gray-700 dark:text-gray-300">To:</span>
+          <span className="text-indigo-600 dark:text-indigo-400">{receiverUsername}</span>
+          {isReceiver && (
+            <span className="ml-auto px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-full">
+              That's you!
+            </span>
+          )}
+          {isInitiator && (
+            <span className="ml-auto px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs rounded-full">
+              Sent by you
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -112,11 +145,17 @@ const TradeCard = ({ trade }: { trade: Trade }) => {
 };
 
 const Trades = () => {
-  const { trades, isLoading, error, fetchUserTrades } = useStore();
+  const { trades, isLoading, error, fetchUserTrades, markTradesAsSeen } = useStore();
 
+  // Fetch trades and mark as seen when component mounts
   useEffect(() => {
-    fetchUserTrades();
-  }, [fetchUserTrades]);
+    const loadData = async () => {
+      await fetchUserTrades();
+      await markTradesAsSeen(); // Mark trades as seen when the page loads
+    };
+
+    loadData();
+  }, [fetchUserTrades, markTradesAsSeen]);
 
   return (
     <motion.div
@@ -142,9 +181,13 @@ const Trades = () => {
         ) : (
           <div className="space-y-6">
             <AnimatePresence>
-              {trades.map(trade => (
-                <TradeCard key={trade._id} trade={trade} />
-              ))}
+              {/* Display all trades in one sorted list */}
+              {trades
+                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                .map(trade => (
+                  <TradeCard key={trade._id} trade={trade} />
+                ))
+              }
             </AnimatePresence>
           </div>
         )}

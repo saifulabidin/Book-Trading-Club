@@ -6,14 +6,13 @@ import DarkModeToggle from './DarkModeToggle';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Header = () => {
-  const { currentUser, notifications } = useStore();
+  const { currentUser, unseenTradesCount } = useStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const unreadNotifications = notifications.filter(n => !n.isRead).length;
 
   const navItems = currentUser ? [
     { to: '/', label: 'Browse Books' },
     { to: '/add-book', label: 'Add Book' },
-    { to: '/trades', label: 'Trades', notifications: unreadNotifications },
+    { to: '/trades', label: 'Trades', badge: unseenTradesCount },
     { to: '/settings', label: 'Settings' }
   ] : [
     { to: '/', label: 'Browse Books' }
@@ -40,9 +39,9 @@ const Header = () => {
                 className="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 relative"
               >
                 {item.label}
-                {item.notifications ? (
+                {item.badge && item.badge > 0 ? (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                    {item.notifications}
+                    {item.badge}
                   </span>
                 ) : null}
               </Link>
@@ -93,9 +92,9 @@ const Header = () => {
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {item.label}
-                  {item.notifications ? (
+                  {item.badge && item.badge > 0 ? (
                     <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-500 text-white">
-                      {item.notifications}
+                      {item.badge}
                     </span>
                   ) : null}
                 </Link>

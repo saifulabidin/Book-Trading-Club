@@ -19,7 +19,8 @@ export const createTrade = async (req: Request, res: Response) => {
       receiver: requestedBook.owner,
       bookOffered,
       bookRequested,
-      message
+      message,
+      isSeen: false // New trade is initially unseen by the receiver
     });
 
     await trade.populate([
@@ -58,6 +59,25 @@ export const getUserTrades = async (req: Request, res: Response) => {
   }
 };
 
+// @desc    Mark all user's received trades as seen
+// @route   PUT /api/trades/mark-seen
+// @access  Private
+export const markTradesAsSeen = async (req: Request, res: Response) => {
+  try {
+    await Trade.updateMany(
+      { 
+        receiver: req.user._id,
+        isSeen: false
+      }, 
+      { isSeen: true }
+    );
+
+    res.json({ message: 'Trades marked as seen successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error marking trades as seen' });
+  }
+};
+
 // @desc    Update trade status
 // @route   PUT /api/trades/:id
 // @access  Private
@@ -83,6 +103,7 @@ export const updateTradeStatus = async (req: Request, res: Response) => {
     }
 
     trade.status = status;
+    trade.isSeen = true; // Mark as seen when status is updated
     await trade.save();
 
     await trade.populate([
