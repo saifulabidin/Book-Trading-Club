@@ -1,4 +1,4 @@
-import { Trade, User, Notification } from '../types';
+import { Trade, User, Notification, Book } from '../types';
 
 /**
  * API endpoints organized by resource
@@ -64,6 +64,16 @@ export function extractEntityId(entity: string | User | { _id: string }): string
   }
   
   return entity._id;
+}
+
+/**
+ * Safely extracts owner ID from a book object
+ * @param book - Book object which might have incomplete data
+ * @returns owner ID or null if unavailable
+ */
+export function getBookOwnerId(book: Book | null | undefined): string | null {
+  if (!book || !book.owner) return null;
+  return typeof book.owner === 'string' ? book.owner : book.owner._id;
 }
 
 /**

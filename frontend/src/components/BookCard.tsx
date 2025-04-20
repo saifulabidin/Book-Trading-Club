@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Book, User } from '../types';
+import { Book } from '../types';
 import { useStore } from '../store/bookStore';
+import { getBookOwnerId } from '../utils/helpers';
 import Modal from './Modal';
 import Button from './Button';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
@@ -29,19 +30,16 @@ const BookCard = ({ book }: BookCardProps) => {
     }
   }, [showTradeModal]);
 
-  const bookOwnerId = useMemo(() => 
-    typeof book.owner === 'string' ? book.owner : (book.owner as User)._id, 
-    [book.owner]
-  );
+  const bookOwnerId = useMemo(() => getBookOwnerId(book), [book.owner]);
 
-  const isOwner = currentUser?._id === bookOwnerId;
+  const isOwner = bookOwnerId && currentUser?._id === bookOwnerId;
 
   const userBooks = useMemo(() => {
     if (!currentUser) return [];
     
     return books.filter(b => {
-      const ownerId = typeof b.owner === 'string' ? b.owner : (b.owner as User)._id;
-      return ownerId === currentUser._id && 
+      const ownerId = getBookOwnerId(b);
+      return ownerId && ownerId === currentUser._id && 
         b._id !== book._id &&
         b.isAvailable;
     });
@@ -66,10 +64,6 @@ const BookCard = ({ book }: BookCardProps) => {
     setShowConfirmDeleteModal(true);
   };
 
-  /**
-   * Handles book deletion after user confirms the action
-   * Calls the store action and manages loading state
-   */
   const handleDeleteConfirm = async () => {
     if (!bookToDelete) return;
     
@@ -79,11 +73,8 @@ const BookCard = ({ book }: BookCardProps) => {
       await deleteBook(bookToDelete._id); 
       setShowConfirmDeleteModal(false);
       setBookToDelete(null);
-      // Success is handled by the store which updates UI automatically
     } catch (error) {
       console.error('Delete operation failed:', error);
-      // Import and use ToastManager for consistent error feedback
-      // ToastManager.error('Failed to delete book. Please try again.');
     } finally {
       setIsDeletingBook(false);
     }
