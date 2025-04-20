@@ -155,6 +155,25 @@ CMD ["npm", "start"]
 - Set up MongoDB Atlas VPC peering
 - Use managed services for monitoring and logging
 
+### Backend Deployment with Railway
+
+1. Create a Railway account at [railway.app](https://railway.app)
+2. Connect your GitHub repository to Railway
+3. Configure deployment settings:
+   - Root Directory: `backend`
+   - Build Command: `npm run build`
+   - Start Command: `npm start` 
+4. Set up environment variables in Railway dashboard:
+   ```
+   PORT=5000
+   MONGODB_URI=your_mongodb_connection_string
+   JWT_SECRET=your_jwt_secret_here
+   FIREBASE_PROJECT_ID=your_firebase_project_id
+   FIREBASE_PRIVATE_KEY=your_firebase_private_key
+   FIREBASE_CLIENT_EMAIL=your_firebase_client_email
+   ```
+5. Deploy the application
+
 ### Frontend Deployment
 
 #### Vercel
@@ -170,6 +189,27 @@ CMD ["npm", "start"]
 - Configure build settings
 - Set up environment variables
 - Enable auto-deployment
+
+### Frontend Deployment with Vercel
+
+1. Create a Vercel account at [vercel.com](https://vercel.com)
+2. Connect your GitHub repository to Vercel
+3. Configure build settings:
+   - Root Directory: `frontend`
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+4. Set up environment variables in Vercel dashboard:
+   ```
+   VITE_API_URL=https://your-railway-app-url.railway.app/api
+   VITE_WS_URL=wss://your-railway-app-url.railway.app
+   VITE_FIREBASE_API_KEY=your_firebase_api_key
+   VITE_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
+   VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
+   VITE_FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
+   VITE_FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
+   VITE_FIREBASE_APP_ID=your_firebase_app_id
+   ```
+5. Deploy the application
 
 ### Production Security Checklist
 

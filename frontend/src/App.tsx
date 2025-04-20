@@ -5,6 +5,7 @@ import { useStore } from './store/bookStore'
 import AppRouter from './routers/AppRouter'
 import LoadingSpinner from './components/LoadingSpinner'
 import ToastContainer from './components/ToastContainer'
+import Footer from './components/layout/Footer'
 import './App.css'
 
 function App() {
@@ -37,8 +38,11 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
-      <AppRouter />
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
+      <div className="flex-grow">
+        <AppRouter />
+      </div>
+      <Footer />
       <ToastContainer />
     </div>
   )
