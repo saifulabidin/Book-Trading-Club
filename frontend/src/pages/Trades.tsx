@@ -23,7 +23,7 @@ const TradeStatusBadge = ({ status }: { status: TradeStatus }) => {
 };
 
 const TradeCard = ({ trade }: { trade: Trade }) => {
-  const { currentUser, updateTradeStatus } = useStore();
+  const { currentUser, updateTradeStatus, completeTrade } = useStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Extract initiator and receiver info properly handling both string and object types
@@ -44,6 +44,17 @@ const TradeCard = ({ trade }: { trade: Trade }) => {
       await updateTradeStatus(trade._id, status);
     } catch (error) {
       console.error('Failed to update trade status:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCompleteTrade = async () => {
+    setIsSubmitting(true);
+    try {
+      await completeTrade(trade._id);
+    } catch (error) {
+      console.error('Failed to complete trade:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -131,9 +142,10 @@ const TradeCard = ({ trade }: { trade: Trade }) => {
         </div>
       )}
 
-      {(trade.status === 'accepted' && !isReceiver) && (
+      {/* Allow either the initiator or receiver to mark the trade as completed when it's in 'accepted' status */}
+      {trade.status === 'accepted' && (isInitiator || isReceiver) && (
         <Button
-          onClick={() => handleUpdateStatus('completed')}
+          onClick={handleCompleteTrade}
           variant="primary"
           isLoading={isSubmitting}
         >

@@ -48,7 +48,8 @@ interface BookStore {
   fetchUserTrades: () => Promise<void>
   proposeTrade: (proposerBookId: string, receiverBookId: string, message?: string) => Promise<void>
   updateTradeStatus: (tradeId: string, status: Trade['status']) => Promise<void>
-  markTradesAsSeen: () => Promise<void> // New action
+  markTradesAsSeen: () => Promise<void>
+  completeTrade: (tradeId: string) => Promise<void> // New action for completing trades
   
   // Notification actions
   addNotification: (notification: Omit<Notification, 'id' | 'createdAt'>) => void
@@ -304,6 +305,23 @@ export const useStore = create<BookStore>()(
           }));
         } catch (error) {
           set({ error: 'Failed to update trade status' });
+          throw error;
+        }
+      },
+
+      completeTrade: async (tradeId) => {
+        try {
+          await api.put(`/trades/${tradeId}/complete`);
+          
+          // Update local state
+          set(state => ({
+            trades: state.trades.map(trade =>
+              trade._id === tradeId ? { ...trade, status: 'completed' } : trade
+            ),
+            message: 'Trade completed successfully',
+          }));
+        } catch (error) {
+          set({ error: 'Failed to complete trade' });
           throw error;
         }
       },
