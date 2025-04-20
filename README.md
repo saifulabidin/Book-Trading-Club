@@ -10,29 +10,26 @@ A full-stack web application that allows users to trade books with other book en
 - [Installation](#installation)
 - [Running the Application](#running-the-application)
 - [Deployment](#deployment)
-- [Backend Deployment](#backend-deployment-example-with-digital-ocean)
-- [Frontend Deployment](#frontend-deployment-example-with-vercel)
-- [Production Security Checklist](#production-security-checklist)
-- [Monitoring and Logging](#monitoring-and-logging)
-- [Troubleshooting Guide](#troubleshooting-guide)
-- [Development Tools](#development-tools)
 - [API Documentation](#api-documentation)
+- [Troubleshooting Guide](#troubleshooting-guide)
 - [Contributing](#contributing)
 - [Testing](#testing)
 - [License](#license)
 - [Acknowledgments](#acknowledgments)
 - [Contact](#contact)
 
-
 ## Features
 
 - 📚 Browse available books for trading
 - 🔐 Secure authentication with Firebase (GitHub OAuth)
-- 💌 Real-time notifications for trade requests and updates
+- 💌 Real-time notifications for trade requests and updates via WebSockets
 - 📱 Responsive design with Tailwind CSS
 - 🔍 Advanced search and filtering options
 - 💬 In-app messaging for trade negotiations
-- ⚡ Fast and modern tech stack
+- 🔄 Status tracking for trade proposals
+- 📋 User profile management
+- 📲 Mobile-friendly interface
+- ⚡ Fast and modern tech stack with TypeScript
 
 ## Tech Stack
 
@@ -53,6 +50,7 @@ A full-stack web application that allows users to trade books with other book en
 - JWT authentication
 - WebSocket for real-time features
 - Input validation and sanitization
+- Error handling middleware
 
 ## Prerequisites
 
@@ -90,9 +88,9 @@ Before running this project, make sure you have:
    PORT=5000
    MONGODB_URI=mongodb://localhost:27017/book-trading-club
    JWT_SECRET=your_jwt_secret_here
-   FIREBASE_PROJECT_ID=
-   FIREBASE_PRIVATE_KEY=
-   FIREBASE_CLIENT_EMAIL=
+   FIREBASE_PROJECT_ID=your_firebase_project_id
+   FIREBASE_PRIVATE_KEY=your_firebase_private_key
+   FIREBASE_CLIENT_EMAIL=your_firebase_client_email
    ```
 
    Frontend (.env):
@@ -127,9 +125,10 @@ The application will be available at:
 
 ## Deployment
 
-### Backend Deployment (Example with Digital Ocean)
+### Backend Deployment
 
-1. Create a Digital Ocean Droplet or App Platform project
+#### Digital Ocean
+1. Create a Digital Ocean App Platform project
 2. Set up environment variables in Digital Ocean dashboard
 3. Configure MongoDB Atlas for production database
 4. Set up PM2 for process management:
@@ -138,8 +137,27 @@ The application will be available at:
    pm2 start dist/index.js --name book-trading-backend
    ```
 
-### Frontend Deployment (Example with Vercel)
+#### Docker Container
+```dockerfile
+FROM node:18
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+EXPOSE 5000
+CMD ["npm", "start"]
+```
 
+#### AWS
+- Set up Elastic Beanstalk or EC2 instance
+- Configure security groups
+- Set up MongoDB Atlas VPC peering
+- Use managed services for monitoring and logging
+
+### Frontend Deployment
+
+#### Vercel
 1. Connect your GitHub repository to Vercel
 2. Configure build settings:
    - Build Command: `npm run build`
@@ -147,111 +165,50 @@ The application will be available at:
 3. Set up environment variables in Vercel dashboard
 4. Deploy!
 
-### Extended Deployment Guide
-
-#### Backend Deployment Options
-
-##### Digital Ocean Deployment
-
-1. **Using App Platform**:
-   ```bash
-   # Install doctl
-   brew install doctl  # macOS
-   snap install doctl # Ubuntu
-
-   # Authenticate with Digital Ocean
-   doctl auth init
-
-   # Create app
-   doctl apps create --spec app.yaml
-   ```
-
-2. **Using Docker**:
-   ```dockerfile
-   FROM node:16
-   WORKDIR /app
-   COPY package*.json ./
-   RUN npm install
-   COPY . .
-   RUN npm run build
-   EXPOSE 5000
-   CMD ["npm", "start"]
-   ```
-
-##### AWS Deployment
-
-1. **Using Elastic Beanstalk**:
-   - Create application
-   - Upload source bundle
-   - Configure environment variables
-   - Set up MongoDB Atlas VPC peering
-
-2. **Using EC2**:
-   - Launch EC2 instance
-   - Configure security groups
-   - Set up Nginx reverse proxy
-   - Use PM2 for process management
-
-#### Frontend Deployment Options
-
-##### Vercel Deployment
-
-1. **Automatic Deployment**:
-   - Connect GitHub repository
-   - Configure build settings
-   - Set environment variables
-
-2. **Manual Deployment**:
-   ```bash
-   npm install -g vercel
-   vercel login
-   vercel
-   ```
-
-##### Netlify Deployment
-
-1. **Using Netlify CLI**:
-   ```bash
-   npm install -g netlify-cli
-   netlify login
-   netlify init
-   netlify deploy
-   ```
-
-2. **Using GitHub Integration**:
-   - Connect repository
-   - Configure build settings:
-     ```
-     Build command: npm run build
-     Publish directory: dist
-     ```
+#### Netlify
+- Connect GitHub repository
+- Configure build settings
+- Set up environment variables
+- Enable auto-deployment
 
 ### Production Security Checklist
 
 - [ ] Enable HTTPS
 - [ ] Set secure headers
 - [ ] Configure CORS properly
-- [ ] Rate limiting
-- [ ] Input validation
-- [ ] DDoS protection
-- [ ] Regular security updates
-- [ ] Secure cookie settings
-- [ ] Environment variable protection
-- [ ] API key rotation
+- [ ] Implement rate limiting
+- [ ] Validate all inputs
+- [ ] Set up DDoS protection
+- [ ] Perform regular security updates
+- [ ] Use secure cookie settings
+- [ ] Protect environment variables
+- [ ] Rotate API keys regularly
+- [ ] Set up proper authentication flows
+- [ ] Implement proper error handling
 
-### Monitoring and Logging
+## API Documentation
 
-1. **Backend Monitoring**:
-   - PM2 monitoring
-   - MongoDB Atlas monitoring
-   - Application logs
-   - Error tracking (Sentry)
+The API documentation is available at `/api/docs` when running the backend server. Key endpoints include:
 
-2. **Frontend Monitoring**:
-   - Performance monitoring
-   - Error tracking
-   - User analytics
-   - Console error monitoring
+### Authentication
+- `POST /api/auth/login` - Authenticate user with GitHub OAuth token
+
+### Books
+- `GET /api/books` - List all available books
+- `POST /api/books` - Create a new book
+- `GET /api/books/:id` - Get book details
+- `PUT /api/books/:id` - Update book
+- `DELETE /api/books/:id` - Delete book
+
+### Trades
+- `GET /api/trades` - List user's trades
+- `POST /api/trades` - Create trade proposal
+- `PUT /api/trades/:id` - Update trade status
+- `PUT /api/trades/:id/complete` - Complete trade
+
+### Users
+- `GET /api/users/profile` - Get user profile
+- `PUT /api/users/profile` - Update user profile
 
 ## Troubleshooting Guide
 
@@ -299,28 +256,20 @@ The application will be available at:
 
 ### Development Tools
 
-1. **MongoDB Compass** - GUI for database management
-2. **Redux DevTools** - For state debugging (works with Zustand)
-3. **React Developer Tools** - For component debugging
-4. **Postman/Insomnia** - For API testing
-
-## API Documentation
-
-The API documentation is available at `/api/docs` when running the backend server. Key endpoints include:
-
-- `POST /api/auth/login` - Authenticate user
-- `GET /api/books` - List all available books
-- `POST /api/trades` - Create a trade proposal
-- `GET /api/trades` - List user's trades
-- `PUT /api/users/profile` - Update user profile
+- **MongoDB Compass** - GUI for database management
+- **Redux DevTools** - For state debugging (works with Zustand)
+- **React Developer Tools** - For component debugging
+- **Postman/Insomnia** - For API testing
+- **VS Code with ESLint/Prettier** - For code quality and formatting
 
 ## Contributing
 
 1. Fork the repository
 2. Create a new branch: `git checkout -b feature/your-feature`
-3. Make your changes
-4. Push to the branch: `git push origin feature/your-feature`
-5. Submit a pull request
+3. Make your changes following the code style guidelines
+4. Write tests for your changes
+5. Push to the branch: `git push origin feature/your-feature`
+6. Submit a pull request with a detailed description of changes
 
 ## Testing
 
@@ -336,6 +285,11 @@ cd frontend
 npm test
 ```
 
+Run E2E tests (requires both backend and frontend running):
+```bash
+npm run test:e2e
+```
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -346,8 +300,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Tailwind CSS](https://tailwindcss.com)
 - [Firebase](https://firebase.google.com)
 - [MongoDB](https://www.mongodb.com)
+- [Express.js](https://expressjs.com)
+- [Zustand](https://github.com/pmndrs/zustand)
 
 ## Contact
 
 - GitHub: [@saifulabidin](https://github.com/saifulabidin)
 - Email: syaiful.osd@yahoo.com
+- LinkedIn: [Saiful Abidin](https://linkedin.com/in/saifulabidin)

@@ -1,15 +1,27 @@
 import { Routes, Route } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import Home from '../pages/Home';
-import AddBook from '../pages/AddBook';
-import Settings from '../pages/Settings';
-import Trades from '../pages/Trades';
-import SignIn from '../pages/SignIn';
-import UserBooks from '../pages/UserBooks';
+import { lazy, Suspense } from 'react';
+
+// Core components
 import Header from '../components/Header';
 import KeyboardShortcuts from '../components/KeyboardShortcuts';
 import PrivateRoute from '../components/PrivateRoute';
+import LoadingSpinner from '../components/LoadingSpinner';
 
+// Eagerly loaded pages
+import Home from '../pages/Home';
+import SignIn from '../pages/SignIn';
+import UserBooks from '../pages/UserBooks';
+
+// Lazily loaded pages (code-splitting)
+const AddBook = lazy(() => import('../pages/AddBook'));
+const Settings = lazy(() => import('../pages/Settings'));
+const Trades = lazy(() => import('../pages/Trades'));
+
+/**
+ * Main application router component
+ * Handles route definitions and layouts
+ */
 const AppRouter = () => {
   return (
     <>
@@ -18,14 +30,19 @@ const AppRouter = () => {
       <main className="pt-6 pb-12">
         <AnimatePresence mode="wait">
           <Routes>
+            {/* Public routes */}
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<SignIn />} />
             <Route path="/user/:username/books" element={<UserBooks />} />
+            
+            {/* Protected routes */}
             <Route
               path="/add-book"
               element={
                 <PrivateRoute>
-                  <AddBook />
+                  <Suspense fallback={<PageLoader />}>
+                    <AddBook />
+                  </Suspense>
                 </PrivateRoute>
               }
             />
@@ -33,7 +50,9 @@ const AppRouter = () => {
               path="/settings"
               element={
                 <PrivateRoute>
-                  <Settings />
+                  <Suspense fallback={<PageLoader />}>
+                    <Settings />
+                  </Suspense>
                 </PrivateRoute>
               }
             />
@@ -41,7 +60,9 @@ const AppRouter = () => {
               path="/trades"
               element={
                 <PrivateRoute>
-                  <Trades />
+                  <Suspense fallback={<PageLoader />}>
+                    <Trades />
+                  </Suspense>
                 </PrivateRoute>
               }
             />
@@ -51,5 +72,14 @@ const AppRouter = () => {
     </>
   );
 };
+
+/**
+ * Loading indicator for lazy-loaded pages
+ */
+const PageLoader = () => (
+  <div className="flex justify-center items-center min-h-[50vh]">
+    <LoadingSpinner size="large" />
+  </div>
+);
 
 export default AppRouter;

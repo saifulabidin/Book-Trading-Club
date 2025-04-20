@@ -5,12 +5,13 @@ import { auth, githubProvider } from '../utils/firebase'
 import { signInWithPopup, signOut } from 'firebase/auth'
 import api, { setAuthToken } from '../utils/api'
 import { LOCAL_STORAGE_KEYS } from '../utils/constants'
+import { API_ENDPOINTS, calculateUnseenTradesCount, extractErrorMessage, extractEntityId, createTradeNotification, shouldMarkTradeAsSeen } from '../utils/helpers'
 
 interface BookStore {
   books: Book[]
   currentUser: User | null
   trades: Trade[]
-  unseenTradesCount: number // New state for badge count
+  unseenTradesCount: number
   notifications: Notification[]
   filters: {
     search: string
@@ -26,38 +27,32 @@ interface BookStore {
   error: string | null
   message: string | null
   
-  // Auth actions
   checkAuthStatus: () => Promise<void>
   signInWithGithub: () => Promise<void>
   logout: () => Promise<void>
   setAuthUser: (user: User | null) => void
   
-  // Book actions
   fetchBooks: () => Promise<void>
   addBook: (book: Omit<Book, '_id' | 'createdAt' | 'owner'>) => Promise<void>
-  deleteBook: (bookId: string) => Promise<void> // Add deleteBook action
+  deleteBook: (bookId: string) => Promise<void>
   searchBooks: (query: string) => void
   filterByCategory: (categories: string[]) => void
   filterByCondition: (conditions: string[]) => void
   
-  // User actions
   updateUserSettings: (settings: Partial<User>) => Promise<void>
   toggleFavorite: (bookId: string) => void
   toggleWishlist: (bookId: string) => void
   
-  // Trade actions
   fetchUserTrades: () => Promise<void>
   proposeTrade: (proposerBookId: string, receiverBookId: string, message?: string) => Promise<void>
   updateTradeStatus: (tradeId: string, status: Trade['status']) => Promise<void>
   markTradesAsSeen: () => Promise<void>
-  completeTrade: (tradeId: string) => Promise<void> // New action for completing trades
+  completeTrade: (tradeId: string) => Promise<void>
   
-  // Notification actions
   addNotification: (notification: Omit<Notification, 'id' | 'createdAt'>) => void
   markNotificationAsRead: (notificationId: string) => void
   clearNotifications: () => void
 
-  // Error handling
   setError: (error: string | null) => void
   setMessage: (message: string | null) => void
   clearError: () => void
@@ -70,7 +65,7 @@ export const useStore = create<BookStore>()(
       books: [],
       currentUser: null,
       trades: [],
-      unseenTradesCount: 0, // Initialize unseenTradesCount
+      unseenTradesCount: 0,
       notifications: [],
       filters: {
         search: '',
@@ -130,7 +125,7 @@ export const useStore = create<BookStore>()(
         try {
           await api.delete(`/books/${bookId}`);
           set(state => ({
-            books: state.books.filter(book => book._id !== bookId), // This line removes the book from the store state
+            books: state.books.filter(book => book._id !== bookId),
             message: 'Book deleted successfully'
           }));
         } catch (error: any) {
@@ -213,62 +208,58 @@ export const useStore = create<BookStore>()(
       },
 
       fetchUserTrades: async () => {
-        if (!get().currentUser) return;
+        const currentUser = get().currentUser;
+        if (!currentUser) return;
 
         set(state => ({ isLoading: { ...state.isLoading, trades: true } }));
+        
         try {
-          const { data } = await api.get<Trade[]>('/trades');
+          const { data } = await api.get<Trade[]>(API_ENDPOINTS.TRADES.LIST);
           
-          // Calculate number of unseen pending trades where user is the receiver
-          const unseenTradesCount = data.filter(trade => 
-            trade.status === 'pending' && 
-            !trade.isSeen && 
-            typeof trade.receiver === 'object' && 
-            trade.receiver._id === get().currentUser?._id
-          ).length;
+          const unseenTradesCount = calculateUnseenTradesCount(data, currentUser._id);
           
           set({ 
             trades: data,
             unseenTradesCount
           });
         } catch (error) {
-          set({ error: 'Failed to fetch trades' });
+          const errorMessage = extractErrorMessage(error, 'Failed to fetch trades');
+          set({ error: errorMessage });
         } finally {
           set(state => ({ isLoading: { ...state.isLoading, trades: false } }));
         }
       },
 
       proposeTrade: async (proposerBookId, receiverBookId, message) => {
-        if (!get().currentUser) {
+        const currentUser = get().currentUser;
+        
+        if (!currentUser) {
           set({ message: 'Please sign in to propose trades' });
           return;
         }
 
         try {
-          const { data } = await api.post<Trade>('/trades', {
+          const { data } = await api.post<Trade>(API_ENDPOINTS.TRADES.CREATE, {
             bookOffered: proposerBookId,
             bookRequested: receiverBookId,
             message
           });
 
+          const receiverId = extractEntityId(data.receiver);
+          const tradeNotification = createTradeNotification({
+            userId: receiverId,
+            type: 'trade_proposal',
+            message: `New trade proposal for your book`,
+            relatedId: data._id
+          });
+
           set(state => ({
             trades: [...state.trades, data],
             message: 'Trade proposed successfully',
-            notifications: [
-              ...state.notifications,
-              {
-                id: crypto.randomUUID(),
-                userId: typeof data.receiver === 'string' ? data.receiver : data.receiver._id,
-                type: 'trade_proposal',
-                message: `New trade proposal for your book`,
-                createdAt: new Date().toISOString(),
-                isRead: false,
-                relatedId: data._id
-              }
-            ]
+            notifications: [...state.notifications, tradeNotification]
           }));
         } catch (error) {
-          set({ error: 'Failed to propose trade' });
+          set({ error: extractErrorMessage(error, 'Failed to propose trade') });
           throw error;
         }
       },
@@ -277,17 +268,11 @@ export const useStore = create<BookStore>()(
         if (!get().currentUser) return;
         
         try {
-          await api.put('/trades/mark-seen');
+          await api.put(API_ENDPOINTS.TRADES.MARK_SEEN);
           
-          // Update trades with isSeen = true and reset unseenTradesCount
           set(state => ({
             trades: state.trades.map(trade => {
-              if (
-                trade.status === 'pending' && 
-                !trade.isSeen && 
-                typeof trade.receiver === 'object' && 
-                trade.receiver._id === get().currentUser?._id
-              ) {
+              if (shouldMarkTradeAsSeen(trade, get().currentUser?._id)) {
                 return { ...trade, isSeen: true };
               }
               return trade;
@@ -301,42 +286,40 @@ export const useStore = create<BookStore>()(
 
       updateTradeStatus: async (tradeId, status) => {
         try {
-          const { data } = await api.put<Trade>(`/trades/${tradeId}`, { status });
+          const { data } = await api.put<Trade>(
+            API_ENDPOINTS.TRADES.UPDATE(tradeId), 
+            { status }
+          );
           
-          // Extract initiator ID correctly handling both string and object types
-          const initiatorId = typeof data.initiator === 'string' 
-            ? data.initiator 
-            : (data.initiator as User)._id;
+          const initiatorId = extractEntityId(data.initiator);
           
+          const notificationType = status === 'accepted' ? 'trade_accepted' : 'trade_rejected';
+          const notificationMessage = `Your trade proposal has been ${status}`;
+          
+          const statusNotification = createTradeNotification({
+            userId: initiatorId,
+            type: notificationType,
+            message: notificationMessage,
+            relatedId: tradeId
+          });
+
           set(state => ({
             trades: state.trades.map(trade =>
               trade._id === tradeId ? data : trade
             ),
             message: `Trade ${status} successfully`,
-            notifications: [
-              ...state.notifications,
-              {
-                id: crypto.randomUUID(),
-                userId: initiatorId,
-                type: status === 'accepted' ? 'trade_accepted' : 'trade_rejected',
-                message: `Your trade proposal has been ${status}`,
-                createdAt: new Date().toISOString(),
-                isRead: false,
-                relatedId: tradeId
-              }
-            ]
+            notifications: [...state.notifications, statusNotification]
           }));
         } catch (error) {
-          set({ error: 'Failed to update trade status' });
+          set({ error: extractErrorMessage(error, 'Failed to update trade status') });
           throw error;
         }
       },
 
       completeTrade: async (tradeId) => {
         try {
-          await api.put(`/trades/${tradeId}/complete`);
+          await api.put(API_ENDPOINTS.TRADES.COMPLETE(tradeId));
           
-          // Update local state
           set(state => ({
             trades: state.trades.map(trade =>
               trade._id === tradeId ? { ...trade, status: 'completed' } : trade
@@ -344,7 +327,7 @@ export const useStore = create<BookStore>()(
             message: 'Trade completed successfully',
           }));
         } catch (error) {
-          set({ error: 'Failed to complete trade' });
+          set({ error: extractErrorMessage(error, 'Failed to complete trade') });
           throw error;
         }
       },
@@ -363,10 +346,8 @@ export const useStore = create<BookStore>()(
             throw new Error('Could not retrieve required information from GitHub account');
           }
           
-          // Exchange Firebase token for our JWT
           const idToken = await githubUser.getIdToken();
           
-          // Send comprehensive data to backend
           const { data } = await api.post<AuthResponse>('/auth/login', {
             token: idToken,
             email: githubUser.email,
@@ -375,7 +356,6 @@ export const useStore = create<BookStore>()(
             providerId: 'github.com'
           });
           
-          // Store the JWT token
           localStorage.setItem(LOCAL_STORAGE_KEYS.TOKEN, data.token);
           setAuthToken(data.token);
 
@@ -498,10 +478,8 @@ export const useStore = create<BookStore>()(
         }
         
         try {
-          // Set auth token for API requests
           setAuthToken(token);
           
-          // Parse stored user data
           const userData = JSON.parse(userJson);
           
           set({ 
@@ -514,10 +492,8 @@ export const useStore = create<BookStore>()(
             }
           });
           
-          // Fetch user trades if authenticated
           get().fetchUserTrades();
         } catch (error) {
-          // If token is invalid or user data is corrupted, clear auth data
           localStorage.removeItem(LOCAL_STORAGE_KEYS.TOKEN);
           localStorage.removeItem(LOCAL_STORAGE_KEYS.USER);
           
@@ -541,7 +517,7 @@ export const useStore = create<BookStore>()(
         filters: state.filters,
         notifications: state.notifications,
         trades: state.trades,
-        unseenTradesCount: state.unseenTradesCount, // Include unseenTradesCount in persistent state
+        unseenTradesCount: state.unseenTradesCount,
         currentUser: state.currentUser
       }),
       onRehydrateStorage: () => (state) => {

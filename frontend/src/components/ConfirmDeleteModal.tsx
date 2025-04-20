@@ -5,35 +5,54 @@ interface ConfirmDeleteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  bookTitle: string | undefined;
+  bookTitle?: string;
   isDeleting: boolean;
 }
 
-const ConfirmDeleteModal = ({ 
-  isOpen, 
-  onClose, 
-  onConfirm, 
-  bookTitle, 
-  isDeleting 
+/**
+ * Reusable confirmation dialog for book deletion
+ * 
+ * @param isOpen - Controls modal visibility
+ * @param onClose - Handler for cancel/close actions
+ * @param onConfirm - Handler for confirming deletion
+ * @param bookTitle - The title of the book being deleted
+ * @param isDeleting - Loading state during deletion process
+ */
+const ConfirmDeleteModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  bookTitle = 'this book',
+  isDeleting
 }: ConfirmDeleteModalProps) => {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Delete Book?">
-      <div className="space-y-4">
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Are you sure you want to delete the book "<strong>{bookTitle || 'this book'}</strong>"?
-          This action cannot be undone.
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Confirm Deletion"
+    >
+      <div className="py-4">
+        <p className="text-gray-700 dark:text-gray-300">
+          Are you sure you want to delete <strong>{bookTitle}</strong>? This action cannot be undone.
         </p>
-        <div className="flex justify-end space-x-3 pt-2">
-          <Button variant="secondary" onClick={onClose} disabled={isDeleting}>
+        
+        <div className="mt-6 flex justify-end space-x-3">
+          <Button
+            variant="secondary"
+            onClick={onClose}
+            type="button"
+            disabled={isDeleting}
+          >
             Cancel
           </Button>
-          <Button 
-            variant="danger" 
-            onClick={onConfirm} 
+          
+          <Button
+            variant="danger"
+            onClick={onConfirm}
+            type="button"
             isLoading={isDeleting}
-            aria-label={`Confirm deletion of ${bookTitle}`}
           >
-            {isDeleting ? 'Deleting...' : 'Delete'}
+            {isDeleting ? 'Deleting...' : 'Delete Book'}
           </Button>
         </div>
       </div>

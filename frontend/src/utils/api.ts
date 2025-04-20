@@ -99,6 +99,23 @@ api.interceptors.response.use(
   }
 );
 
+// Trade API endpoints
+export const tradesAPI = {
+  // Get trades for the current user
+  getUserTrades: () => api.get('/trades'),
+  
+  // Update trade status (accept/reject)
+  updateTradeStatus: (tradeId: string, status: string) => 
+    api.patch(`/trades/${tradeId}/status`, { status }),
+  
+  // Complete a trade
+  completeTrade: (tradeId: string) => 
+    api.patch(`/trades/${tradeId}/complete`),
+    
+  // Mark trades as seen
+  markTradesSeen: () => api.post('/user/trades/seen')
+};
+
 export const setAuthToken = (token: string | null) => {
   if (token) {
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;

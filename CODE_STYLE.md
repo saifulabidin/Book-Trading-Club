@@ -1,5 +1,38 @@
 # Code Style Guide
 
+## Table of Contents
+- [Overview](#overview)
+- [TypeScript Guidelines](#typescript-guidelines)
+  - [Type Definitions](#type-definitions)
+  - [Naming Conventions](#naming-conventions)
+  - [File Organization](#file-organization)
+- [React Best Practices](#react-best-practices)
+  - [Component Organization](#component-organization)
+  - [Hook Usage](#hook-usage)
+  - [State Management](#state-management)
+- [Backend Guidelines](#backend-guidelines)
+  - [Controller Structure](#controller-structure)
+  - [Error Handling](#error-handling)
+- [CSS/Tailwind Guidelines](#csstailtwind-guidelines)
+  - [Class Organization](#class-organization)
+  - [Component Styling](#component-styling)
+- [Git Commit Guidelines](#git-commit-guidelines)
+  - [Commit Message Format](#commit-message-format)
+  - [Types](#types)
+  - [Examples](#examples)
+- [Code Review Guidelines](#code-review-guidelines)
+  - [Pull Request Template](#pull-request-template)
+  - [Review Checklist](#review-checklist)
+- [Documentation Guidelines](#documentation-guidelines)
+  - [Component Documentation](#component-documentation)
+  - [Function Documentation](#function-documentation)
+- [Performance Guidelines](#performance-guidelines)
+  - [React Performance](#react-performance)
+  - [API Performance](#api-performance)
+- [Accessibility Guidelines](#accessibility-guidelines)
+  - [ARIA Attributes](#aria-attributes)
+  - [Keyboard Navigation](#keyboard-navigation)
+
 ## Overview
 
 This document outlines coding standards and best practices for the Book Trading Club project.

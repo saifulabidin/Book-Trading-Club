@@ -66,20 +66,24 @@ const BookCard = ({ book }: BookCardProps) => {
     setShowConfirmDeleteModal(true);
   };
 
+  /**
+   * Handles book deletion after user confirms the action
+   * Calls the store action and manages loading state
+   */
   const handleDeleteConfirm = async () => {
     if (!bookToDelete) return;
     
     setIsDeletingBook(true);
+    
     try {
-      // Call the store action which handles both API call and state update
       await deleteBook(bookToDelete._id); 
-      // Zustand store automatically filters the 'books' array, triggering UI updates
-      // in components consuming the store state. No manual filtering needed here.
       setShowConfirmDeleteModal(false);
       setBookToDelete(null);
+      // Success is handled by the store which updates UI automatically
     } catch (error) {
-      console.error('Delete failed:', error);
-      // Consider adding user feedback here, e.g., using ToastManager.error
+      console.error('Delete operation failed:', error);
+      // Import and use ToastManager for consistent error feedback
+      // ToastManager.error('Failed to delete book. Please try again.');
     } finally {
       setIsDeletingBook(false);
     }

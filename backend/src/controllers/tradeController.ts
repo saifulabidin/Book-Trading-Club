@@ -2,69 +2,90 @@ import { Request, Response } from 'express';
 import { Trade } from '../models/Trade';
 import { Book } from '../models/Book';
 
-// @desc    Create a new trade request
-// @route   POST /api/trades
-// @access  Private
+/**
+ * Standard fields to populate in trade queries
+ */
+const TRADE_POPULATION_FIELDS = [
+  { path: 'bookOffered', select: 'title author' },
+  { path: 'bookRequested', select: 'title author' },
+  { path: 'initiator', select: 'username' },
+  { path: 'receiver', select: 'username' }
+];
+
+/**
+ * @desc    Create a new trade request between users
+ * @route   POST /api/trades
+ * @access  Private
+ */
 export const createTrade = async (req: Request, res: Response) => {
   try {
     const { bookOffered, bookRequested, message } = req.body;
-    const requestedBook = await Book.findById(bookRequested);
+    
+    // Input validation
+    if (!bookOffered || !bookRequested) {
+      return res.status(400).json({ 
+        message: 'Both bookOffered and bookRequested are required'
+      });
+    }
 
+    // Find the requested book to get its owner
+    const requestedBook = await Book.findById(bookRequested);
     if (!requestedBook) {
       return res.status(404).json({ message: 'Requested book not found' });
     }
 
-    const trade = await Trade.create({
+    // Create the trade document
+    const newTrade = await Trade.create({
       initiator: req.user._id,
       receiver: requestedBook.owner,
       bookOffered,
       bookRequested,
       message,
-      isSeen: false // New trade is initially unseen by the receiver
+      isSeen: false
     });
 
-    await trade.populate([
-      { path: 'bookOffered', select: 'title author' },
-      { path: 'bookRequested', select: 'title author' },
-      { path: 'initiator', select: 'username' },
-      { path: 'receiver', select: 'username' }
-    ]);
+    // Populate trade with related data
+    await newTrade.populate(TRADE_POPULATION_FIELDS);
 
-    res.status(201).json(trade);
-  } catch (error) {
-    res.status(500).json({ message: 'Error creating trade request' });
+    res.status(201).json(newTrade);
+  } catch (error: any) {
+    const statusCode = error.name === 'ValidationError' ? 400 : 500;
+    res.status(statusCode).json({ 
+      message: error.message || 'Error creating trade request'
+    });
   }
 };
 
-// @desc    Get user's trades (both initiated and received)
-// @route   GET /api/trades
-// @access  Private
+/**
+ * @desc    Get all trades for the current user (both initiated and received)
+ * @route   GET /api/trades
+ * @access  Private
+ */
 export const getUserTrades = async (req: Request, res: Response) => {
   try {
-    const trades = await Trade.find({
+    const userTrades = await Trade.find({
       $or: [
         { initiator: req.user._id },
         { receiver: req.user._id }
       ]
-    }).populate([
-      { path: 'bookOffered', select: 'title author' },
-      { path: 'bookRequested', select: 'title author' },
-      { path: 'initiator', select: 'username' },
-      { path: 'receiver', select: 'username' }
-    ]).sort('-createdAt');
+    })
+    .populate(TRADE_POPULATION_FIELDS)
+    .sort('-createdAt');
 
-    res.json(trades);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching trades' });
+    res.json(userTrades);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message || 'Error fetching trades' });
   }
 };
 
-// @desc    Mark all user's received trades as seen
-// @route   PUT /api/trades/mark-seen
-// @access  Private
+/**
+ * @desc    Mark all trades received by current user as seen
+ * @route   PUT /api/trades/mark-seen
+ * @access  Private
+ */
 export const markTradesAsSeen = async (req: Request, res: Response) => {
   try {
-    await Trade.updateMany(
+    const result = await Trade.updateMany(
       { 
         receiver: req.user._id,
         isSeen: false
@@ -72,89 +93,118 @@ export const markTradesAsSeen = async (req: Request, res: Response) => {
       { isSeen: true }
     );
 
-    res.json({ message: 'Trades marked as seen successfully' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error marking trades as seen' });
+    res.json({ 
+      message: 'Trades marked as seen successfully',
+      updatedCount: result.modifiedCount
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message || 'Error marking trades as seen' });
   }
 };
 
-// @desc    Update trade status
-// @route   PUT /api/trades/:id
-// @access  Private
+/**
+ * @desc    Update the status of a trade (accept or reject)
+ * @route   PUT /api/trades/:id
+ * @access  Private
+ */
 export const updateTradeStatus = async (req: Request, res: Response) => {
   try {
+    const { id } = req.params;
     const { status } = req.body;
-    const trade = await Trade.findById(req.params.id);
+    
+    // Validate the requested status
+    const validStatuses = ['accepted', 'rejected', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ 
+        message: `Status must be one of: ${validStatuses.join(', ')}`
+      });
+    }
 
+    const trade = await Trade.findById(id);
+
+    // Validate trade exists
     if (!trade) {
       return res.status(404).json({ message: 'Trade not found' });
     }
 
+    // Validate user is authorized to update this trade
     if (trade.receiver.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to update this trade' });
     }
 
+    // If accepting the trade, update book availability
     if (status === 'accepted') {
-      // Update books availability
       await Promise.all([
         Book.findByIdAndUpdate(trade.bookOffered, { isAvailable: false }),
         Book.findByIdAndUpdate(trade.bookRequested, { isAvailable: false })
       ]);
     }
 
+    // Update trade status and mark as seen
     trade.status = status;
-    trade.isSeen = true; // Mark as seen when status is updated
+    trade.isSeen = true;
     await trade.save();
 
-    await trade.populate([
-      { path: 'bookOffered', select: 'title author' },
-      { path: 'bookRequested', select: 'title author' },
-      { path: 'initiator', select: 'username' },
-      { path: 'receiver', select: 'username' }
-    ]);
+    // Return the updated trade with populated fields
+    await trade.populate(TRADE_POPULATION_FIELDS);
 
     res.json(trade);
-  } catch (error) {
-    res.status(500).json({ message: 'Error updating trade status' });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message || 'Error updating trade status' });
   }
 };
 
-// @desc    Complete a trade
-// @route   PUT /api/trades/:id/complete
-// @access  Private
+/**
+ * @desc    Complete an accepted trade and transfer book ownership
+ * @route   PUT /api/trades/:id/complete
+ * @access  Private
+ */
 export const completeTrade = async (req: Request, res: Response) => {
   try {
-    const trade = await Trade.findById(req.params.id);
+    const { id } = req.params;
+    const trade = await Trade.findById(id);
 
+    // Validate trade exists
     if (!trade) {
       return res.status(404).json({ message: 'Trade not found' });
     }
 
-    if (![trade.initiator.toString(), trade.receiver.toString()].includes(req.user._id.toString())) {
+    // Verify user is part of this trade
+    const isTradeParticipant = [
+      trade.initiator.toString(), 
+      trade.receiver.toString()
+    ].includes(req.user._id.toString());
+    
+    if (!isTradeParticipant) {
       return res.status(403).json({ message: 'Not authorized to complete this trade' });
     }
 
+    // Trade must be in accepted status
     if (trade.status !== 'accepted') {
       return res.status(400).json({ message: 'Trade must be accepted before completion' });
     }
 
+    // Update trade status to completed
     trade.status = 'completed';
     await trade.save();
 
-    // Swap book ownership
+    // Transfer book ownership
     await Promise.all([
       Book.findByIdAndUpdate(trade.bookOffered, { 
         owner: trade.receiver,
-        isAvailable: true
+        isAvailable: true  // Book becomes available with new owner
       }),
       Book.findByIdAndUpdate(trade.bookRequested, { 
         owner: trade.initiator,
-        isAvailable: true
+        isAvailable: true  // Book becomes available with new owner
       })
     ]);
 
-    res.json({ message: 'Trade completed successfully' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error completing trade' });
+    res.json({ 
+      message: 'Trade completed successfully',
+      tradeId: trade._id
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message || 'Error completing trade' });
   }
 };
