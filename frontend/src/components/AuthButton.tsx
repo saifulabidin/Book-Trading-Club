@@ -12,7 +12,7 @@ const AuthButton = () => {
   };
 
   const handleSignInClick = () => {
-    navigate('/signin');
+    navigate('/login');
   };
 
   // Render user info when logged in

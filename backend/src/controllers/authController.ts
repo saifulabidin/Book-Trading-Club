@@ -3,46 +3,6 @@ import { User } from '../models/User';
 import { generateToken } from '../utils/generateToken';
 import { auth } from '../config/firebase';
 
-// @desc    Register a new user
-// @route   POST /api/auth/register
-// @access  Public
-export const registerUser = async (req: Request, res: Response) => {
-  try {
-    const { username, email, password, location, fullName } = req.body;
-
-    const userExists = await User.findOne({ 
-      $or: [{ email }, { username }] 
-    });
-
-    if (userExists) {
-      return res.status(400).json({ 
-        message: 'User with this email or username already exists' 
-      });
-    }
-
-    const user = await User.create({
-      username,
-      email,
-      password,
-      location,
-      fullName
-    });
-
-    res.status(201).json({
-      _id: user._id,
-      username: user.username,
-      email: user.email,
-      location: user.location,
-      fullName: user.fullName,
-      token: generateToken(user._id)
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      message: 'Server error during registration' 
-    });
-  }
-};
-
 // @desc    Login user with GitHub
 // @route   POST /api/auth/login
 // @access  Public
@@ -70,7 +30,7 @@ export const loginUser = async (req: Request, res: Response) => {
       const baseUsername = (decodedToken.email || email)?.split('@')[0] || 'user';
       let username = baseUsername;
       let counter = 1;
-      
+
       while (await User.findOne({ username })) {
         username = `${baseUsername}${counter}`;
         counter++;

@@ -459,25 +459,42 @@ export const useStore = create<BookStore>()(
 
       checkAuthStatus: async () => {
         const token = localStorage.getItem(LOCAL_STORAGE_KEYS.TOKEN);
+        const userJson = localStorage.getItem(LOCAL_STORAGE_KEYS.USER);
         
-        if (!token) {
-          set({ isAuthenticated: false, currentUser: null });
+        if (!token || !userJson) {
+          set({ 
+            isAuthenticated: false, 
+            currentUser: null,
+            isLoading: { 
+              auth: false,
+              books: false,
+              trades: false
+            }
+          });
           return;
         }
         
-        set(state => ({ isLoading: { ...state.isLoading, auth: true } }));
-        
         try {
-          // Verify token validity with the server
-          await api.get('/auth/verify');
+          // Set auth token for API requests
+          setAuthToken(token);
           
-          // If token is valid, current user is already set
-          set(state => ({ 
-            isAuthenticated: !!state.currentUser,
-            isLoading: { ...state.isLoading, auth: false }
-          }));
+          // Parse stored user data
+          const userData = JSON.parse(userJson);
+          
+          set({ 
+            isAuthenticated: true,
+            currentUser: userData,
+            isLoading: { 
+              auth: false,
+              books: false,
+              trades: false
+            }
+          });
+          
+          // Fetch user trades if authenticated
+          get().fetchUserTrades();
         } catch (error) {
-          // If token verification fails, clear auth data
+          // If token is invalid or user data is corrupted, clear auth data
           localStorage.removeItem(LOCAL_STORAGE_KEYS.TOKEN);
           localStorage.removeItem(LOCAL_STORAGE_KEYS.USER);
           

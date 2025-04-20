@@ -47,8 +47,7 @@ JWT_SECRET=your_jwt_secret_here
 ## API Endpoints
 
 ### Authentication
-- `POST /api/auth/login` - Authenticate with Firebase token
-- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Authenticate with Firebase/GitHub token
 
 ### Books
 - `GET /api/books` - List all available books
@@ -74,7 +73,6 @@ JWT_SECRET=your_jwt_secret_here
 interface IUser {
   username: string;
   email: string;
-  password: string;
   location?: string;
   fullName?: string;
   books: mongoose.Types.ObjectId[];

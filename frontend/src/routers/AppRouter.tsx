@@ -18,7 +18,7 @@ const AppRouter = () => {
         <AnimatePresence mode="wait">
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/signin" element={<SignIn />} />
+            <Route path="/login" element={<SignIn />} />
             <Route
               path="/add-book"
               element={

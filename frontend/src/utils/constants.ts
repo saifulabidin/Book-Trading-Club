@@ -4,7 +4,6 @@ export const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
 export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
-  REGISTER: '/register',
   PROFILE: '/profile',
   ADD_BOOK: '/add-book',
   BOOK_DETAILS: '/books/:id',
@@ -83,9 +82,7 @@ export const CATEGORIES = [
 
 export const API_ENDPOINTS = {
   AUTH: {
-    SIGN_IN: '/auth/signin',
-    SIGN_OUT: '/auth/signout',
-    REFRESH_TOKEN: '/auth/refresh'
+    SIGN_IN: '/auth/login'
   },
   BOOKS: {
     LIST: '/books',

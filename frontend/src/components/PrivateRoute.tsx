@@ -10,8 +10,8 @@ const PrivateRoute = ({ children }: PrivateRouteProps) => {
   const location = useLocation();
 
   if (!isAuthenticated) {
-    // Redirect to sign-in page with return URL
-    return <Navigate to={`/signin?returnUrl=${encodeURIComponent(location.pathname)}`} replace />;
+    // If not authenticated, redirect to login page with return URL parameter
+    return <Navigate to={`/login?returnUrl=${encodeURIComponent(location.pathname)}`} replace />;
   }
 
   return children;
